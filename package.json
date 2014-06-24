@@ -1,6 +1,6 @@
 {
     "name": "sequelize-auto-ts",
-    "version": "0.0.1",
+    "version": "1.0.0",
     "author": "Samuel Neff <sam@serndesign.com> https://github.com/samuelneff",
     "description": "Generates Sequelize definition statements and TypeScript interfaces for tables in a database.",
     "keywords": ["Sequelize", "orm", "generate", "template", "script", "typescript"],
@@ -13,7 +13,6 @@
     "dependencies" : {
         "sequelize": "1.7.8",
         "script-template" : ">=1.0.0",
-        "bluebird": "2.1.2",
         "prompt": "0.2.13",
         "mysql" : "2.3.2"
     },
