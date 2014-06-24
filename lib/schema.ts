@@ -5,196 +5,202 @@
 
 /// <reference path="../typings/node/node.d.ts" />
 /// <reference path="../typings/sequelize/sequelize.d.ts" />
-/// <reference path="../typings/bluebird/bluebird.d.ts" />
 /// <reference path="util" />
-
-var Promise = require("bluebird");
 
 var Sequelize:sequelize.SequelizeStatic = require("sequelize");
 
-export module schema
+export class Schema {
+
+    public static idSuffix:string = "Id";
+
+    constructor(public tables:Array<Table>)
+    {
+
+    }
+
+    public idFields():Array<Field>
+    {
+        var idSuffix = Schema.idSuffix;
+
+        if (idSuffix == null || !idSuffix.length)
+        {
+            return [];
+        }
+
+        var idFieldsProcessed:Dictionary<boolean> = {};
+        var idFields:Array<Field> = [];
+
+        var idSuffixLen:number = idSuffix.length;
+
+        for(var tableIndex:number = 0; tableIndex < this.tables.length; tableIndex++)
+        {
+            var table:Table = this.tables[tableIndex];
+
+            if (table == null || table.fields == null)
+            {
+                continue;
+            }
+
+            for(var fieldIndex:number = 0; fieldIndex < table.fields.length; fieldIndex++)
+            {
+                var field:Field = table.fields[fieldIndex];
+                var fieldName:string = field.fieldName;
+
+                if (!idFieldsProcessed[fieldName] &&
+                    fieldName.length > idSuffixLen &&
+                    fieldName.substr(fieldName.length - idSuffixLen, idSuffixLen) == idSuffix)
+                {
+                    idFields.push(field);
+                    idFieldsProcessed[fieldName] = true;
+                }
+            }
+        }
+
+        return idFields;
+    }
+
+    public static fieldTypeTranslations:Dictionary<string> = {
+
+        tinyint: "number",
+        smallint: "number",
+        int: "number",
+        mediumint: "number",
+        year: "number",
+        float: "number",
+        double: "number",
+
+        timestamp: "Date",
+        date: "Date",
+        datetime: "Date",
+
+        tinyblob: "Buffer",
+        mediumblob: "Buffer",
+        longblob: "Buffer",
+        blob: "Buffer",
+        binary: "Buffer",
+        varbinary: "Buffer",
+        bit: "Buffer",
+
+        char: "string",
+        varchar: "string",
+        tinytext: "string",
+        mediumtext: "string",
+        longtext: "string",
+        text: "string",
+        "enum": "string",
+        "set": "string",
+        decimal: "string",
+        bigint: "string",
+        time: "string",
+        geometry: "string"
+    };
+}
+
+export class Table
 {
-    export class Schema {
+    fields:Array<Field> = [];
 
-        public static idSuffix:string = "_id";
+    constructor(public tableName:string)
+    {
 
-        constructor(public tables:Array<Table>)
-        {
-
-        }
-
-        idFields():Array<Field>
-        {
-            var idSuffix = Schema.idSuffix;
-
-            if (idSuffix == null || !idSuffix.length)
-            {
-                return [];
-            }
-
-            var idFieldsProcessed:Dictionary<boolean> = {};
-            var idFields:Array<Field> = [];
-
-            var idSuffixLen:number = idSuffix.length;
-
-            for(var tableIndex:number = 0; tableIndex < this.tables.length; tableIndex++)
-            {
-                var table:Table = this.tables[tableIndex];
-
-                if (table == null || table.fields == null)
-                {
-                    continue;
-                }
-
-                for(var fieldIndex:number = 0; fieldIndex < table.fields.length; fieldIndex++)
-                {
-                    var field:Field = table.fields[fieldIndex];
-                    var fieldName:string = field.fieldName;
-
-                    if (!idFieldsProcessed[fieldName] &&
-                        fieldName.length > idSuffixLen &&
-                        fieldName.substr(fieldName.length - idSuffixLen, idSuffixLen) == idSuffix)
-                    {
-                        idFields.push(field);
-                        idFieldsProcessed[fieldName] = true;
-                    }
-                }
-            }
-
-            return idFields;
-        }
-
-        public static fieldTypeTranslations:Dictionary<string> = {
-
-            tinyint: "number",
-            smallint: "number",
-            int: "number",
-            mediumint: "number",
-            year: "number",
-            float: "number",
-            double: "number",
-
-            timestamp: "Date",
-            date: "Date",
-            datetime: "Date",
-
-            tinyblob: "Buffer",
-            mediumblob: "Buffer",
-            longblob: "Buffer",
-            blob: "Buffer",
-            binary: "Buffer",
-            varbinary: "Buffer",
-            bit: "Buffer",
-
-            char: "string",
-            varchar: "string",
-            tinytext: "string",
-            mediumtext: "string",
-            longtext: "string",
-            text: "string",
-            "enum": "string",
-            "set": "string",
-            decimal: "string",
-            bigint: "string",
-            time: "string",
-            geometry: "string"
-        };
     }
 
-    export class Table
+    public tableNameSingular():string
     {
-        fields:Array<Field> = [];
+        return Sequelize.Utils.singularize(this.tableName, "en");
+    }
+}
 
-        constructor(public tableName:string)
-        {
+export class Field
+{
+    constructor(public fieldName:string, public fieldType:string)
+    {
 
-        }
     }
 
-    export class Field
+    fieldNameProperCase():string
     {
-        constructor(public fieldName:string, public fieldType:string)
-        {
-
-        }
-
-        translatedFieldType():string
-        {
-            return  Schema.idSuffix != null &&
-                Schema.idSuffix.length &&
-                this.fieldName.length > Schema.idSuffix.length &&
-                this.fieldName.substr(this.fieldName.length - Schema.idSuffix.length, Schema.idSuffix.length) == Schema.idSuffix
-                ? this.fieldName
-                : Schema.fieldTypeTranslations[this.fieldType];
-        }
+        return this.fieldName.charAt(0).toUpperCase() + this.fieldName.substr(1, this.fieldName.length - 1);
     }
 
-    interface Row
+    translatedFieldType():string
     {
-        table_name:string;
-        column_name:string;
-        data_type:string;
+        return Schema.fieldTypeTranslations[this.fieldType];
     }
 
-    export function read(database:string, username:string, password:string, options:sequelize.Options):Promise<Schema>
+    customFieldType():string
     {
-        var sequelize:sequelize.Sequelize = new Sequelize(database, username, password, options);
+        return  Schema.idSuffix != null &&
+            Schema.idSuffix.length &&
+            this.fieldName.length > Schema.idSuffix.length &&
+            this.fieldName.substr(this.fieldName.length - Schema.idSuffix.length, Schema.idSuffix.length) == Schema.idSuffix
+            ? this.fieldNameProperCase()
+            : this.translatedFieldType();
+    }
+}
 
-        var sql:string =
-            "select table_name, column_name, data_type " +
-            "from information_schema.columns " +
-            "where table_schema = '" + database + "' " +
-            "order by table_name, ordinal_position";
+interface Row
+{
+    table_name:string;
+    column_name:string;
+    data_type:string;
+}
 
-        return new Promise<Schema>(function (resolve:(schema:Schema) => void, reject:(err:Error) => void)
-        {
-            sequelize
-                .query(sql)
-                .complete(function(err:Error, rows:Array<Row>) {
-                    processRows(err, rows, resolve, reject);
-                });
+export function read(database:string, username:string, password:string, options:sequelize.Options, callback:(err:Error, schema:Schema) => void):void
+{
+    var sequelize:sequelize.Sequelize = new Sequelize(database, username, password, options);
+
+    var sql:string =
+        "select table_name, column_name, data_type " +
+        "from information_schema.columns " +
+        "where table_schema = '" + database + "' " +
+        "order by table_name, ordinal_position";
+
+    sequelize
+        .query(sql)
+        .complete(function(err:Error, rows:Array<Row>) {
+            processRows(err, rows, callback);
         });
-    }
+}
 
-    function processRows(err:Error, rows:Array<Row>, resolve:(schema:Schema) => void, reject:(err:Error) => void)
+function processRows(err:Error, rows:Array<Row>, callback:(err:Error, schema:Schema) => void):void
+{
+    if (err)
     {
-        if (err)
-        {
-            reject(err);
-            return;
-        }
-
-        if (rows == null)
-        {
-            var err:Error = new Error("No schema info returned for database.");
-            reject(err);
-            return;
-        }
-
-        if (rows.length == 0)
-        {
-            var err:Error = new Error("Empty schema info returned for database.");
-            reject(err);
-            return;
-        }
-
-        var tables:Array<Table> = [];
-        var table:Table = new Table("");
-
-        for(var index:number = 0; index<rows.length; index++)
-        {
-            var row:Row = rows[index];
-
-            if (row.table_name != table.tableName)
-            {
-                table = new Table(row.table_name);
-                tables.push(table);
-            }
-
-            table.fields.push(new Field(row.column_name, row.data_type));
-        }
-
-        var schema:Schema = new Schema(tables);
-        resolve(schema);
+        callback(err, null);
+        return;
     }
+
+    if (rows == null)
+    {
+        var err:Error = new Error("No schema info returned for database.");
+        callback(err, null);
+        return;
+    }
+
+    if (rows.length == 0)
+    {
+        var err:Error = new Error("Empty schema info returned for database.");
+        callback(err, null);
+        return;
+    }
+
+    var tables:Array<Table> = [];
+    var table:Table = new Table("");
+
+    for(var index:number = 0; index<rows.length; index++)
+    {
+        var row:Row = rows[index];
+
+        if (row.table_name != table.tableName)
+        {
+            table = new Table(row.table_name);
+            tables.push(table);
+        }
+
+        table.fields.push(new Field(row.column_name, row.data_type));
+    }
+
+    var schema:Schema = new Schema(tables);
+    callback(null, schema);
 }

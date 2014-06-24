@@ -13,7 +13,9 @@
     "dependencies" : {
         "sequelize": "1.7.8",
         "script-template" : ">=1.0.0",
-        "bluebird": "2.1.2"
+        "bluebird": "2.1.2",
+        "prompt": "0.2.13",
+        "mysql" : "2.3.2"
     },
     "devDependencies": {
         "jasmine-node" : "1.14.3"

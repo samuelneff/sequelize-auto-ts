@@ -6,9 +6,11 @@
         <item url="file://$PROJECT_DIR$/lib/schema.js" />
         <item url="file://$PROJECT_DIR$/lib/util.js" />
         <item url="file://$PROJECT_DIR$/lib/auto-types.js" />
-        <item url="file://$PROJECT_DIR$/lib/template-definitions.js" />
-        <item url="file://$PROJECT_DIR$/lib/template-types.js" />
+        <item url="file://$PROJECT_DIR$/lib/sequelize-definitions.js" />
+        <item url="file://$PROJECT_DIR$/lib/cli.js" />
+        <item url="file://$PROJECT_DIR$/lib/sequelize-types.js" />
         <item url="file://$PROJECT_DIR$/node_modules/script-template/tests/index.js" />
+        <item url="file://$PROJECT_DIR$/lib/sequelize-auto-ts.js" />
       </sourceFilesUrls>
     </properties>
     <CLASSES>
@@ -625,9 +627,11 @@
       <root url="file://$PROJECT_DIR$/node_modules/script-template/lib/index.js" />
       <root url="file://$PROJECT_DIR$/lib/schema.js" />
       <root url="file://$PROJECT_DIR$/lib/util.js" />
-      <root url="file://$PROJECT_DIR$/lib/template-definitions.js" />
+      <root url="file://$PROJECT_DIR$/lib/sequelize-definitions.js" />
       <root url="file://$PROJECT_DIR$/lib/auto-types.js" />
-      <root url="file://$PROJECT_DIR$/lib/template-types.js" />
+      <root url="file://$PROJECT_DIR$/lib/sequelize-types.js" />
+      <root url="file://$PROJECT_DIR$/lib/cli.js" />
+      <root url="file://$PROJECT_DIR$/lib/sequelize-auto-ts.js" />
       <root url="file://$PROJECT_DIR$/node_modules/script-template/tests/index.js" />
     </CLASSES>
     <SOURCES />
