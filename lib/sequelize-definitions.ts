@@ -18,7 +18,7 @@ export module models
 {
     export var initialized:boolean = false;
 
-    /*__each__ tables */ export var __tableNameSingular__:__tableNameSingular__Model;
+    /*__each__ tables */ export var __tableName__:__tableName__Model;
 
     export function initialize(database:string, username:string, password:string, options:sequelize.Options):void
     {
@@ -31,7 +31,7 @@ export module models
 
         /*__startEach__ tables */
 
-        models.__tableNameSingular__ = sequelize.define<__tableNameSingular__Instance, __tableNameSingular__Pojo>("__tableNameSingular__", {
+        models.__tableName__ = sequelize.define<__tableNameSingular__Instance, __tableNameSingular__Pojo>("__tableNameSingular__", {
             /*__each__ fields, */"__fieldName__":"__translatedFieldType__"
             },
             {
@@ -41,4 +41,4 @@ export module models
     }
 }
 
-/*__ignore__*/ export interface __tableNameSingular__Model {}
+/*__ignore__*/ export interface __tableName__Model {}

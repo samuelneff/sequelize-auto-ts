@@ -24,6 +24,6 @@ interface __tableNameSingular__Pojo
 
 interface __tableNameSingular__Instance extends sequelize.Instance<__tableNameSingular__Instance, __tableNameSingular__Pojo>, __tableNameSingular__Pojo { }
 
-interface __tableNameSingular__Model extends sequelize.Model<__tableNameSingular__Instance, __tableNameSingular__Pojo> { }
+interface __tableName__Model extends sequelize.Model<__tableNameSingular__Instance, __tableNameSingular__Pojo> { }
 
 /*__endEach__*/
