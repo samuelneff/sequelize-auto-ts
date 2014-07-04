@@ -65,7 +65,7 @@ function generateFromTemplate(options:GenerateOptions, schema:schema.Schema, tem
 
 function translateReferences(source:string, options:GenerateOptions):string
 {
-    var re:RegExp = new RegExp("///\\s+<reference\\s+path=[\"'][\\./\\w\\-\\d]+?([\\w\\.\\-]+)[\"']\\s*/>");
+    var re:RegExp = new RegExp("///\\s+<reference\\s+path=[\"'][\\./\\w\\-\\d]+?([\\w\\.\\-]+)[\"']\\s*/>", "g");
 
     function replaceFileName(match:string, fileName:string):string
     {
@@ -130,7 +130,7 @@ function findTargetPath(fileName:string, searchDirectory:string):string
 
         var stat:fs.Stats = fs.statSync(childPath);
 
-        if (stat.isDirectory() && childName.charAt(0) != ".")
+        if (stat.isDirectory() && childName.charAt(0) != '.' && childName != 'node_modules')
         {
             target = findTargetPath(fileName, childPath);
             if (target != null)
