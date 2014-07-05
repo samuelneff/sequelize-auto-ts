@@ -1,10 +1,12 @@
 /// <reference path="../typings/node/node.d.ts" />
-/// <reference path="../typings/sequelize/sequelize.d.ts" />
+/// <reference path="./sequelize.d.ts" />
+/// <reference path="../typings/fs-extra/fs-extra.d.ts" />
 
 import schema = require("./schema");
-import fs = require("fs");
 import path = require("path");
 import ScriptTemplate = require("../node_modules/script-template/lib/index");
+import fs = require("fs");
+
 var Sequelize:sequelize.SequelizeStatic = require("sequelize");
 
 var _:sequelize.Lodash = Sequelize.Utils._;
@@ -43,7 +45,7 @@ export function generate(options:GenerateOptions, callback?:(err:Error) => void)
 function generateTypes(options:GenerateOptions, schema:schema.Schema, callback:(err:Error) => void):void
 {
     generateFromTemplate(options, schema, "sequelize-types.ts", function(err:Error) {
-       generateFromTemplate(options, schema, "sequelize-definitions.ts", callback);
+       generateFromTemplate(options, schema, "sequelize-models.ts", callback);
     });
 }
 
@@ -76,13 +78,23 @@ function translateReferences(source:string, options:GenerateOptions):string
 
         var targetPath:string = findTargetPath(fileName, targetProjectRootDirectory);
 
-        var relativePath:string = path.relative(options.targetDirectory, targetPath);
+        var relativePath:string = targetPath == null
+                                    ? null
+                                    : path.relative(options.targetDirectory, targetPath);
+
         if (relativePath == null)
         {
-            console.log("!! WARNING !! Could not find " + fileName + " in target project, root path: " + targetProjectRootDirectory);
+            var sourceText:string = fs.readFileSync(path.join(__dirname, fileName), "utf8");
+            var targetText = translateReferences(sourceText, options);
+            fs.writeFileSync(path.join(options.targetDirectory, fileName), targetText);
+
             relativePath = "./" + fileName;
         }
-        return "/// <reference path=\"" + relativePath + "\" />";
+        else if (relativePath.charAt(0) != ".")
+        {
+            relativePath = "./" + relativePath;
+        }
+        return "/// <reference path=\"" + relativePath.replace(/\\/g, '/') + "\" />";
     }
 
     return source.replace(re, replaceFileName);
@@ -114,8 +126,6 @@ function hasFile(directory:string, file:string):boolean
 
 function findTargetPath(fileName:string, searchDirectory:string):string
 {
-    console.log("Looking for " + fileName + " in " + searchDirectory);
-
     var target:string = path.join(searchDirectory, fileName);
     if (fs.existsSync(target))
     {

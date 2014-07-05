@@ -1,6 +1,6 @@
-/// <reference path="../node/node.d.ts" />
-/// <reference path="../lodash/lodash.d.ts" />
-/// <reference path="../underscore.string/underscore.string.d.ts" />
+/// <reference path="../typings/node/node.d.ts" />
+/// <reference path="../typings/lodash/lodash.d.ts" />
+/// <reference path="../typings/underscore.string/underscore.string.d.ts" />
 
 declare module sequelize
 {
@@ -2364,7 +2364,7 @@ declare module sequelize
         Lingo:any; // external project, no definitions yet}
     }
 
-    interface Lodash extends _.LoDashStatic {
+    interface Lodash extends _.LoDashStatic, UnderscoreStringStaticExports {
         includes(str:string, needle:string): boolean;
         camelizeIf(str:string, condition:boolean):string;
         camelizeIf(str:string, condition:any):string;

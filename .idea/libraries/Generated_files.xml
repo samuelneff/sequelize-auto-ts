@@ -4,6 +4,7 @@
       <sourceFilesUrls>
         <item url="file://$PROJECT_DIR$/node_modules/script-template/lib/index.js" />
         <item url="file://$PROJECT_DIR$/lib/schema.js" />
+        <item url="file://$PROJECT_DIR$/lib/sequelize-models.js" />
         <item url="file://$PROJECT_DIR$/lib/util.js" />
         <item url="file://$PROJECT_DIR$/lib/auto-types.js" />
         <item url="file://$PROJECT_DIR$/lib/sequelize-definitions.js" />
@@ -624,7 +625,9 @@
       <root url="file://$PROJECT_DIR$/lib/DefinitelyTyped/jasmine/legacy/jasmine-1.3-tests.js" />
       <root url="file://$PROJECT_DIR$/lib/DefinitelyTyped/lazy.js/lazy.js-tests.js" />
       <root url="file://$PROJECT_DIR$/lib/DefinitelyTyped/jasmine/jasmine-tests.js" />
+      <root url="file://$PROJECT_DIR$/lib/sequelize-definitions.js" />
       <root url="file://$PROJECT_DIR$/node_modules/script-template/lib/index.js" />
+      <root url="file://$PROJECT_DIR$/lib/sequelize-models.js" />
       <root url="file://$PROJECT_DIR$/lib/schema.js" />
       <root url="file://$PROJECT_DIR$/lib/util.js" />
       <root url="file://$PROJECT_DIR$/lib/sequelize-definitions.js" />

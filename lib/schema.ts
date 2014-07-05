@@ -4,7 +4,7 @@
  */
 
 /// <reference path="../typings/node/node.d.ts" />
-/// <reference path="../typings/sequelize/sequelize.d.ts" />
+/// <reference path="./sequelize.d.ts" />
 /// <reference path="util" />
 
 var Sequelize:sequelize.SequelizeStatic = require("sequelize");
@@ -109,11 +109,17 @@ export class Table
     {
         return Sequelize.Utils.singularize(this.tableName, "en");
     }
+
+    public tableNameSingularCamel():string
+    {
+        var tableName:string = this.tableNameSingular();
+        return tableName.charAt(0).toLowerCase() + tableName.substr(1);
+    }
 }
 
 export class Field
 {
-    constructor(public fieldName:string, public fieldType:string)
+    constructor(public fieldName:string, public fieldType:string, public table:Table)
     {
 
     }
@@ -136,6 +142,16 @@ export class Field
             this.fieldName.substr(this.fieldName.length - Schema.idSuffix.length, Schema.idSuffix.length) == Schema.idSuffix
             ? this.fieldNameProperCase()
             : this.translatedFieldType();
+    }
+
+    public tableNameSingular():string
+    {
+        return this.table.tableNameSingular();
+    }
+
+    public tableNameSingularCamel():string
+    {
+        return this.table.tableNameSingularCamel();
     }
 }
 
@@ -198,7 +214,7 @@ function processRows(err:Error, rows:Array<Row>, callback:(err:Error, schema:Sch
             tables.push(table);
         }
 
-        table.fields.push(new Field(row.column_name, row.data_type));
+        table.fields.push(new Field(row.column_name, row.data_type, table));
     }
 
     var schema:Schema = new Schema(tables);
