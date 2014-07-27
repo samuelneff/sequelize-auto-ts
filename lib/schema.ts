@@ -5,7 +5,8 @@
 
 /// <reference path="../typings/node/node.d.ts" />
 /// <reference path="./sequelize.d.ts" />
-/// <reference path="util" />
+
+import util = require('./util');
 
 var Sequelize:sequelize.SequelizeStatic = require("sequelize");
 
@@ -27,7 +28,7 @@ export class Schema {
             return [];
         }
 
-        var idFieldsProcessed:Dictionary<boolean> = {};
+        var idFieldsProcessed:util.Dictionary<boolean> = {};
         var idFields:Array<Field> = [];
 
         var idSuffixLen:number = idSuffix.length;
@@ -59,7 +60,7 @@ export class Schema {
         return idFields;
     }
 
-    public static fieldTypeTranslations:Dictionary<string> = {
+    public static fieldTypeTranslations:util.Dictionary<string> = {
 
         tinyint: "number",
         smallint: "number",
@@ -115,11 +116,15 @@ export class Table
         var tableName:string = this.tableNameSingular();
         return tableName.charAt(0).toLowerCase() + tableName.substr(1);
     }
+
+    public nonReferenceFields():Field[] {
+        return this.fields.filter(f => !f.isReference);
+    }
 }
 
 export class Field
 {
-    constructor(public fieldName:string, public fieldType:string, public table:Table)
+    constructor(public fieldName:string, public fieldType:string, public table:Table, public isReference:boolean = false)
     {
 
     }
@@ -134,14 +139,20 @@ export class Field
         return Schema.fieldTypeTranslations[this.fieldType];
     }
 
-    customFieldType():string
-    {
-        return  Schema.idSuffix != null &&
+    isIdField():boolean {
+        return Schema.idSuffix != null &&
             Schema.idSuffix.length &&
             this.fieldName.length > Schema.idSuffix.length &&
-            this.fieldName.substr(this.fieldName.length - Schema.idSuffix.length, Schema.idSuffix.length) == Schema.idSuffix
+            this.fieldName.substr(this.fieldName.length - Schema.idSuffix.length, Schema.idSuffix.length) == Schema.idSuffix;
+    }
+
+    customFieldType():string
+    {
+        return this.isIdField()
             ? this.fieldNameProperCase()
-            : this.translatedFieldType();
+            : this.isReference
+                ? this.fieldType
+                : this.translatedFieldType();
     }
 
     public tableNameSingular():string
@@ -155,15 +166,30 @@ export class Field
     }
 }
 
-interface Row
+interface ColumnDefinitionRow
 {
     table_name:string;
     column_name:string;
     data_type:string;
 }
 
+interface ReferenceDefinitionRow
+{
+    table_name:string;
+    column_name:string;
+    referenced_table_name:string;
+    referenced_column_name:string;
+}
+
+interface XrefDefinition
+{
+    firstTableName:string;
+    secondTableName:string;
+}
+
 export function read(database:string, username:string, password:string, options:sequelize.Options, callback:(err:Error, schema:Schema) => void):void
 {
+    var schema:Schema;
     var sequelize:sequelize.Sequelize = new Sequelize(database, username, password, options);
 
     var sql:string =
@@ -174,49 +200,175 @@ export function read(database:string, username:string, password:string, options:
 
     sequelize
         .query(sql)
-        .complete(function(err:Error, rows:Array<Row>) {
-            processRows(err, rows, callback);
-        });
-}
+        .complete(processTablesAndColumns);
 
-function processRows(err:Error, rows:Array<Row>, callback:(err:Error, schema:Schema) => void):void
-{
-    if (err)
+    function processTablesAndColumns(err:Error, rows:Array<ColumnDefinitionRow>):void
     {
-        callback(err, null);
-        return;
-    }
-
-    if (rows == null)
-    {
-        var err:Error = new Error("No schema info returned for database.");
-        callback(err, null);
-        return;
-    }
-
-    if (rows.length == 0)
-    {
-        var err:Error = new Error("Empty schema info returned for database.");
-        callback(err, null);
-        return;
-    }
-
-    var tables:Array<Table> = [];
-    var table:Table = new Table("");
-
-    for(var index:number = 0; index<rows.length; index++)
-    {
-        var row:Row = rows[index];
-
-        if (row.table_name != table.tableName)
+        if (err)
         {
-            table = new Table(row.table_name);
-            tables.push(table);
+            callback(err, null);
+            return;
         }
 
-        table.fields.push(new Field(row.column_name, row.data_type, table));
+        if (rows == null)
+        {
+            var err:Error = new Error("No schema info returned for database.");
+            callback(err, null);
+            return;
+        }
+
+        if (rows.length == 0)
+        {
+            var err:Error = new Error("Empty schema info returned for database.");
+            callback(err, null);
+            return;
+        }
+
+        var tables:Array<Table> = [];
+        var table:Table = new Table("");
+
+        for(var index:number = 0; index<rows.length; index++)
+        {
+            var row:ColumnDefinitionRow = rows[index];
+
+            if (row.table_name != table.tableName)
+            {
+                table = new Table(row.table_name);
+                tables.push(table);
+            }
+
+            table.fields.push(new Field(row.column_name, row.data_type, table));
+        }
+
+        schema = new Schema(tables);
+        //callback(null, schema);
+        readReferences();
     }
 
-    var schema:Schema = new Schema(tables);
-    callback(null, schema);
+    function readReferences():void {
+
+        var sql:string =
+            "SELECT	table_name, column_name, referenced_table_name, referenced_column_name " +
+            "FROM 	information_schema.key_column_usage " +
+            "WHERE	constraint_schema = '" + database + "' " +
+            "AND	referenced_table_name IS NOT NULL;";
+
+        sequelize
+            .query(sql)
+            .complete(processReferences);
+    }
+
+    function processReferences(err:Error, rows:Array<ReferenceDefinitionRow>):void
+    {
+        if (err)
+        {
+            callback(err, null);
+            return;
+        }
+
+        if (rows == null)
+        {
+            var err:Error = new Error("No references returned for database.");
+            callback(err, null);
+            return;
+        }
+
+        if (rows.length == 0)
+        {
+            var err:Error = new Error("Empty references returned for database.");
+            callback(err, null);
+            return;
+        }
+
+        var tableLookup:util.Dictionary<Table> = {};
+        var xrefs:util.Dictionary<XrefDefinition> = {};
+
+        schema.tables.forEach(table => tableLookup[table.tableName] = table);
+
+        rows.forEach(processReferenceRow);
+
+        processReferenceXrefs();
+
+        callback(null, schema);
+
+        function processReferenceRow(row:ReferenceDefinitionRow):void {
+            if (row.table_name.length > 4 && row.table_name.substr(0, 4) == 'Xref')
+            {
+                processReferenceXrefRow(row);
+                return;
+            }
+
+            // Example rows for
+            //
+            // CREATE TABLE Leads (
+            //    leadId integer PRIMARY KEY AUTO_INCREMENT,
+            //    accountId integer NOT NULL,
+            //
+            //    FOREIGN KEY (accountId) REFERENCES Accounts (accountId),
+            //  );
+            //
+            // table_name               =   Leads
+            // column_name              =   accountId
+            // referenced_table_name    =   Accounts
+            // referenced_column_name   =   accountId
+            //
+            var parentTable = tableLookup[row.referenced_table_name];
+            var childTable = tableLookup[row.table_name];
+
+            // create array of children in parent, i.e., AccountPojo.leads:LeadPojo[]
+            parentTable.fields.push(new Field(
+                util.camelCase(row.table_name),                                     // Leads -> leads
+                Sequelize.Utils.singularize(row.table_name) + 'Pojo[]',             // Leads -> LeadPojo[]
+                parentTable,                                                        // Accounts table reference
+                true));
+
+            // create singular parent reference from child
+            childTable.fields.push(new Field(
+                util.camelCase(Sequelize.Utils.singularize(row.referenced_table_name)),    // Accounts -> account
+                Sequelize.Utils.singularize(row.referenced_table_name) + 'Pojo',           // Accounts -> AccountPojo
+                childTable,
+                true));
+        }
+
+        function processReferenceXrefRow(row:ReferenceDefinitionRow):void {
+            var xref:XrefDefinition = xrefs[row.table_name];
+
+            if (xref == null) {
+                xrefs[row.table_name] = {
+                    firstTableName: row.referenced_table_name,
+                    secondTableName: null
+                };
+            } else {
+                xref.secondTableName = row.referenced_table_name;
+            }
+        }
+
+        function processReferenceXrefs():void {
+            for (var xrefName in xrefs) {
+
+                if (!xrefs.hasOwnProperty(xrefName)) {
+                    continue;
+                }
+
+                var xref:XrefDefinition = xrefs[xrefName];
+
+                var firstTable:Table = tableLookup[xref.firstTableName];
+                var secondTable:Table = tableLookup[xref.secondTableName];
+
+                firstTable.fields.push(new Field(
+                    util.camelCase(xref.secondTableName),
+                    Sequelize.Utils.singularize(xref.secondTableName) + 'Pojo[]',
+                    firstTable,
+                    true));
+
+                secondTable.fields.push(new Field(
+                    util.camelCase(xref.firstTableName),
+                        Sequelize.Utils.singularize(xref.firstTableName) + 'Pojo[]',
+                    secondTable,
+                    true));
+
+            }
+        }
+    }
 }
+

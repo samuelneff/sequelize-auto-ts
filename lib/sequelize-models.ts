@@ -31,14 +31,14 @@ export function initialize(database:string, username:string, password:string, op
     /*__startEach__ tables */
 
     __tableName__ = <types.__tableName__Model> sequelize.define<types.__tableNameSingular__Instance, types.__tableNameSingular__Pojo>('__tableNameSingular__', {
-        /*__each__ fields, */'__fieldName__':'__translatedFieldType__'
+        /*__each__ nonReferenceFields, */'__fieldName__':'__translatedFieldType__'
         },
         {
             timestamps: false,
             classMethods: {
                 get__tableNameSingular__:(__tableNameSingularCamel__:types.__tableNameSingular__Pojo) => {
                     var where:{[key:string]:any} = {};
-                    /*__each__ fields */ if (__tableNameSingularCamel__['__fieldName__'] !== undefined) { where['__fieldName__'] = __tableNameSingularCamel__['__fieldName__']};
+                    /*__each__ nonReferenceFields */ if (__tableNameSingularCamel__['__fieldName__'] !== undefined) { where['__fieldName__'] = __tableNameSingularCamel__['__fieldName__']}
                     return this.find({where: where});
                 }
             }

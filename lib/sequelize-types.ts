@@ -11,7 +11,7 @@
 /// <reference path="../typings/node/node.d.ts" />
 /// <reference path="./sequelize.d.ts" />
 
-/*__each__ idFields */ export interface __fieldNameProperCase__ { }
+/*__each__ idFields */ export interface __fieldNameProperCase__ { __fieldNameProperCase__:number; }
 
 /*__ignore__*/ export interface __translatedFieldType__ {}
 /*__ignore__*/ export interface __customFieldType__ {}

@@ -1,6 +1,5 @@
 /// <reference path="../typings/node/node.d.ts" />
 /// <reference path="./sequelize.d.ts" />
-/// <reference path="../typings/fs-extra/fs-extra.d.ts" />
 
 import schema = require("./schema");
 import path = require("path");
