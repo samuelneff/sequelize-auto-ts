@@ -1,1 +1,1 @@
-{"version":3,"file":"sequelize-types.js","sourceRoot":"","sources":["sequelize-types.ts"],"names":[],"mappings":"AAAA,oEAAoE;AACpE,EAAE;AACF,kBAAkB;AAClB,EAAE;AACF,cAAc;AACd,EAAE;AACF,mCAAmC;AACnC,EAAE;AACF,oEAAoE;AAEpE,kDAAkD;AAClD,yCAAyC;;;AAqBzC,eAAe"}
+{"version":3,"file":"sequelize-types.js","sourceRoot":"","sources":["sequelize-types.ts"],"names":[],"mappings":"AAAA,oEAAoE;AACpE,EAAE;AACF,kBAAkB;AAClB,EAAE;AACF,cAAc;AACd,EAAE;AACF,kCAAkC;AAClC,EAAE;AACF,oEAAoE;AAEpE,kDAAkD;AAClD,yCAAyC;;;AAqBzC,eAAe"}

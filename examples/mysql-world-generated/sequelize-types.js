@@ -4,12 +4,9 @@
 //
 // DO NOT EDIT
 //
-// See sequelize-auto-ts for edits
+// See schemaInfoTemplate for edits
 //
 ////////////////////////////////////////////////////////////////////
-/// <reference path="../typings/node/node.d.ts" />
-/// <reference path="./sequelize.d.ts" />
-
-
-/*__endEach__*/
+/// <reference path="../../typings/node/node.d.ts" />
+/// <reference path="../../lib/sequelize.d.ts" />
 //# sourceMappingURL=sequelize-types.js.map

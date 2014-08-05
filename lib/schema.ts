@@ -12,7 +12,7 @@ var Sequelize:sequelize.SequelizeStatic = require("sequelize");
 
 export class Schema {
 
-    public static idSuffix:string = "Id";
+    public static idSuffix:string = "id";
 
     constructor(public tables:Array<Table>)
     {
@@ -49,7 +49,7 @@ export class Schema {
 
                 if (!idFieldsProcessed[fieldName] &&
                     fieldName.length > idSuffixLen &&
-                    fieldName.substr(fieldName.length - idSuffixLen, idSuffixLen) == idSuffix)
+                    fieldName.substr(fieldName.length - idSuffixLen, idSuffixLen).toLocaleLowerCase() == idSuffix)
                 {
                     idFields.push(field);
                     idFieldsProcessed[fieldName] = true;
@@ -266,17 +266,10 @@ export function read(database:string, username:string, password:string, options:
             return;
         }
 
-        if (rows == null)
+        if (rows == null || rows.length == 0)
         {
-            var err:Error = new Error("No references returned for database.");
-            callback(err, null);
-            return;
-        }
-
-        if (rows.length == 0)
-        {
-            var err:Error = new Error("Empty references returned for database.");
-            callback(err, null);
+            console.log("Warning: No references defined in database.");
+            callback(null, schema);
             return;
         }
 
