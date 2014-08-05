@@ -25,6 +25,5 @@ build/Release
 node_modules
 
 # WebStorm
-.idea/workspace.xml
-.idea/tasks.xml
+.idea
 
