@@ -9,11 +9,15 @@
 import util = require('./util');
 
 var Sequelize:sequelize.SequelizeStatic = require("sequelize");
+import fs = require('fs');
 
 export class Schema {
 
-    public static idSuffix:string = "id";
+    public static idSuffix:string = "id"; // NOTE: Must be LOWER case
 
+    public references:Reference[] = [];
+    public xrefs:Xref[] = [];
+    
     constructor(public tables:Array<Table>)
     {
 
@@ -143,7 +147,7 @@ export class Field
         return Schema.idSuffix != null &&
             Schema.idSuffix.length &&
             this.fieldName.length > Schema.idSuffix.length &&
-            this.fieldName.substr(this.fieldName.length - Schema.idSuffix.length, Schema.idSuffix.length) == Schema.idSuffix;
+            this.fieldName.substr(this.fieldName.length - Schema.idSuffix.length, Schema.idSuffix.length).toLowerCase() == Schema.idSuffix;
     }
 
     customFieldType():string
@@ -155,6 +159,15 @@ export class Field
                 : this.translatedFieldType();
     }
 
+    defineFieldType():string {
+        if ( this == this.table.fields[0]) {
+            return '{type: "number", primaryKey: true, autoIncrement: true}';
+        } else if (this.table.tableName.substr(0,4) == 'Xref' && this == this.table.fields[1]) {
+            return '{type: "number", primaryKey: true}';
+        }
+        return '\'' + this.translatedFieldType() + '\'';
+    }
+
     public tableNameSingular():string
     {
         return this.table.tableNameSingular();
@@ -163,6 +176,27 @@ export class Field
     public tableNameSingularCamel():string
     {
         return this.table.tableNameSingularCamel();
+    }
+}
+
+export class Reference {
+
+    constructor(public primaryTableName:string,
+                public foreignTableName:string,
+                public associationName:string,
+                public foreignKey:string) {
+
+    }
+}
+
+export class Xref {
+
+    constructor(public firstTableName:string,
+                public firstFieldName:string,
+                public secondTableName:string,
+                public secondFieldName:string,
+                public xrefTableName:string) {
+
     }
 }
 
@@ -179,12 +213,6 @@ interface ReferenceDefinitionRow
     column_name:string;
     referenced_table_name:string;
     referenced_column_name:string;
-}
-
-interface XrefDefinition
-{
-    firstTableName:string;
-    secondTableName:string;
 }
 
 export function read(database:string, username:string, password:string, options:sequelize.Options, callback:(err:Error, schema:Schema) => void):void
@@ -274,7 +302,7 @@ export function read(database:string, username:string, password:string, options:
         }
 
         var tableLookup:util.Dictionary<Table> = {};
-        var xrefs:util.Dictionary<XrefDefinition> = {};
+        var xrefs:util.Dictionary<Xref> = {};
 
         schema.tables.forEach(table => tableLookup[table.tableName] = table);
 
@@ -321,18 +349,32 @@ export function read(database:string, username:string, password:string, options:
                 Sequelize.Utils.singularize(row.referenced_table_name) + 'Pojo',           // Accounts -> AccountPojo
                 childTable,
                 true));
+
+            // tell Sequelize about the reference
+            schema.references.push(new Reference(
+                                            row.referenced_table_name,
+                                            row.table_name,
+                                            row.column_name == row.referenced_column_name
+                                                ? row.referenced_table_name
+                                                :   row.column_name.charAt(0).toUpperCase() +
+                                                    row.column_name.substr(1, row.column_name.length - row.referenced_column_name.length - 1) +
+                                                    row.referenced_table_name,
+                                            row.column_name));
         }
 
         function processReferenceXrefRow(row:ReferenceDefinitionRow):void {
-            var xref:XrefDefinition = xrefs[row.table_name];
+            var xref:Xref = xrefs[row.table_name];
 
             if (xref == null) {
-                xrefs[row.table_name] = {
-                    firstTableName: row.referenced_table_name,
-                    secondTableName: null
-                };
+                xrefs[row.table_name] = new Xref(
+                                                    row.referenced_table_name,
+                                                    row.referenced_column_name,
+                                                    null,
+                                                    null,
+                                                    row.table_name);
             } else {
                 xref.secondTableName = row.referenced_table_name;
+                xref.secondFieldName = row.referenced_column_name;
             }
         }
 
@@ -343,7 +385,9 @@ export function read(database:string, username:string, password:string, options:
                     continue;
                 }
 
-                var xref:XrefDefinition = xrefs[xrefName];
+                var xref:Xref = xrefs[xrefName];
+
+                schema.xrefs.push(xref);
 
                 var firstTable:Table = tableLookup[xref.firstTableName];
                 var secondTable:Table = tableLookup[xref.secondTableName];

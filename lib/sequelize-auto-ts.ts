@@ -6,6 +6,7 @@ import path = require("path");
 import ScriptTemplate = require("../node_modules/script-template/lib/index");
 import fs = require("fs");
 
+
 var Sequelize:sequelize.SequelizeStatic = require("sequelize");
 
 var _:sequelize.Lodash = Sequelize.Utils._;
