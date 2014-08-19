@@ -25,6 +25,7 @@ export var SEQUELIZE:sequelize.Sequelize;
 /*__ignore__*/ var __foreignTableName__:sequelize.Model<any, any>;
 /*__ignore__*/ var __firstTableName__:sequelize.Model<any, any>;
 /*__ignore__*/ var __secondTableName__:sequelize.Model<any, any>;
+/*__ignore__*/ var __associationNameQuoted__:string;
 
 export function initialize(database:string, username:string, password:string, options:sequelize.Options):any
 {
@@ -55,13 +56,14 @@ export function initialize(database:string, username:string, password:string, op
     /*__startEach__ references */
 
     __primaryTableName__.hasMany(__foreignTableName__, {foreignKey: '__foreignKey__' });
-    __foreignTableName__.belongsTo(__primaryTableName__, {as: '__associationName__', foreignKey: '__foreignKey__' });
+    __foreignTableName__.belongsTo(__primaryTableName__, {as: __associationNameQuoted__, foreignKey: '__foreignKey__' });
 
     /*__endEach__*/
 
     /*__startEach__ xrefs */
-    __firstTableName__.hasMany(__secondTableName__, { foreignKey: '__secondFieldName__', through: '__xrefTableName__'});
-    __secondTableName__.hasMany(__firstTableName__, { foreignKey: '__firstFieldName__', through: '__xrefTableName__'});
+
+    __firstTableName__.hasMany(__secondTableName__, { through: '__xrefTableName__'});
+    __secondTableName__.hasMany(__firstTableName__, { through: '__xrefTableName__'});
 
     /*__endEach__*/
 

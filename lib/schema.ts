@@ -17,7 +17,8 @@ export class Schema {
 
     public references:Reference[] = [];
     public xrefs:Xref[] = [];
-    
+    public associations:Association[] = [];
+
     constructor(public tables:Array<Table>)
     {
 
@@ -70,9 +71,11 @@ export class Schema {
         smallint: "number",
         int: "number",
         mediumint: "number",
+        bigint: "number",
         year: "number",
         float: "number",
         double: "number",
+        decimal: "number",
 
         timestamp: "Date",
         date: "Date",
@@ -94,10 +97,45 @@ export class Schema {
         text: "string",
         "enum": "string",
         "set": "string",
-        decimal: "string",
-        bigint: "string",
         time: "string",
         geometry: "string"
+    };
+
+    public static fieldTypeSequelize:util.Dictionary<string> = {
+
+        tinyint: 'Sequelize.INTEGER',
+        smallint: 'Sequelize.INTEGER',
+        int: 'Sequelize.INTEGER',
+        mediumint: 'Sequelize.INTEGER',
+        bigint: 'Sequelize.INTEGER',
+        year: 'Sequelize.INTEGER',
+        
+        float: 'Sequelize.DECIMAL',
+        double: 'Sequelize.DECIMAL',
+        decimal: 'Sequelize.DECIMAL',
+
+        timestamp: 'Sequelize.DATE',
+        date: 'Sequelize.DATE',
+        datetime: 'Sequelize.DATE',
+
+        tinyblob: 'Sequelize.BLOB',
+        mediumblob: 'Sequelize.BLOB',
+        longblob: 'Sequelize.BLOB',
+        blob: 'Sequelize.BLOB',
+        binary: 'Sequelize.BLOB',
+        varbinary: 'Sequelize.BLOB',
+        bit: 'Sequelize.BLOB',
+
+        char: 'Sequelize.STRING',
+        varchar: 'Sequelize.STRING',
+        tinytext: 'Sequelize.STRING',
+        mediumtext: 'Sequelize.STRING',
+        longtext: 'Sequelize.STRING',
+        text: 'Sequelize.STRING',
+        "enum": 'Sequelize.STRING',
+        "set": 'Sequelize.STRING',
+        time: 'Sequelize.STRING',
+        geometry: 'Sequelize.STRING'
     };
 }
 
@@ -140,7 +178,22 @@ export class Field
 
     translatedFieldType():string
     {
-        return Schema.fieldTypeTranslations[this.fieldType];
+        var translated:string = Schema.fieldTypeTranslations[this.fieldType];
+        if (translated == undefined) {
+            console.log('Unable to translate field type:' + this.fieldType);
+            translated = this.fieldType;
+        }
+        return translated;
+    }
+
+    sequelizeFieldType():string
+    {
+        var translated:string = Schema.fieldTypeSequelize[this.fieldType];
+        if (translated == undefined) {
+            console.log('Unable to sequelize field type:' + this.fieldType);
+            translated = this.fieldType;
+        }
+        return translated;
     }
 
     isIdField():boolean {
@@ -165,7 +218,7 @@ export class Field
         } else if (this.table.tableName.substr(0,4) == 'Xref' && this == this.table.fields[1]) {
             return '{type: "number", primaryKey: true}';
         }
-        return '\'' + this.translatedFieldType() + '\'';
+        return this.sequelizeFieldType();
     }
 
     public tableNameSingular():string
@@ -187,6 +240,12 @@ export class Reference {
                 public foreignKey:string) {
 
     }
+
+    associationNameQuoted():string {
+        return this.associationName
+            ? '\'' + this.associationName + '\''
+            : undefined;
+    }
 }
 
 export class Xref {
@@ -198,6 +257,11 @@ export class Xref {
                 public xrefTableName:string) {
 
     }
+}
+
+// Associations are named foreign keys, like OwnerUserID
+export class Association {
+    constructor(public associationName:string) {}
 }
 
 interface ColumnDefinitionRow
@@ -303,6 +367,7 @@ export function read(database:string, username:string, password:string, options:
 
         var tableLookup:util.Dictionary<Table> = {};
         var xrefs:util.Dictionary<Xref> = {};
+        var associationsFound:util.Dictionary<boolean> = {};
 
         schema.tables.forEach(table => tableLookup[table.tableName] = table);
 
@@ -350,15 +415,32 @@ export function read(database:string, username:string, password:string, options:
                 childTable,
                 true));
 
+            var associationName:string;
+
+            if (row.column_name == row.referenced_column_name) {
+                associationName = undefined;
+            } else {
+
+                // example, row.column_name is ownerUserID
+                // we want association to be called OwnerUsers
+                // so we take first character and make it uppercase,
+                // then take rest of prefix from foreign key
+                // then append the referenced table name
+                associationName = row.column_name.charAt(0).toUpperCase() +
+                                  row.column_name.substr(1, row.column_name.length - row.referenced_column_name.length - 1) +
+                                  row.referenced_table_name;
+
+                if (!associationsFound[associationName]) {
+                    schema.associations.push(new Association(associationName));
+                    associationsFound[associationName] = true;
+                }
+            }
+
             // tell Sequelize about the reference
             schema.references.push(new Reference(
                                             row.referenced_table_name,
                                             row.table_name,
-                                            row.column_name == row.referenced_column_name
-                                                ? row.referenced_table_name
-                                                :   row.column_name.charAt(0).toUpperCase() +
-                                                    row.column_name.substr(1, row.column_name.length - row.referenced_column_name.length - 1) +
-                                                    row.referenced_table_name,
+                                            associationName,
                                             row.column_name));
         }
 

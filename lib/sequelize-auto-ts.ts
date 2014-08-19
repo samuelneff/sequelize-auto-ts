@@ -45,7 +45,9 @@ export function generate(options:GenerateOptions, callback?:(err:Error) => void)
 function generateTypes(options:GenerateOptions, schema:schema.Schema, callback:(err:Error) => void):void
 {
     generateFromTemplate(options, schema, "sequelize-types.ts", function(err:Error) {
-       generateFromTemplate(options, schema, "sequelize-models.ts", callback);
+        generateFromTemplate(options, schema, "sequelize-names.ts", function(err:Error) {
+            generateFromTemplate(options, schema, "sequelize-models.ts", callback);
+        });
     });
 }
 
