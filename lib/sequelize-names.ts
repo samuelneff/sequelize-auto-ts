@@ -24,6 +24,11 @@ export var __tableNameSingularCamel__Fields:__tableName__Fields = new __tableNam
 
 /*__endEach__*/
 
+export class CalculatedFields {
+    /*__each__ calculatedFields */ __fieldName__:string = '__fieldName__';
+}
+export var calculatedFields:CalculatedFields = new CalculatedFields();
+
 export class AssociationNames {
     /*__each__ associations */ __associationName__:string = '__associationName__';
 }

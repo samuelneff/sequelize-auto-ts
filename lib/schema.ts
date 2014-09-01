@@ -10,6 +10,7 @@ import util = require('./util');
 
 var Sequelize:sequelize.SequelizeStatic = require("sequelize");
 import fs = require('fs');
+var _:sequelize.Lodash = Sequelize.Utils._;
 
 export class Schema {
 
@@ -18,6 +19,7 @@ export class Schema {
     public references:Reference[] = [];
     public xrefs:Xref[] = [];
     public associations:Association[] = [];
+    public calculatedFields:Array<Field> = [];
 
     constructor(public tables:Array<Table>)
     {
@@ -70,6 +72,7 @@ export class Schema {
         tinyint: "number",
         smallint: "number",
         int: "number",
+        integer: "number",
         mediumint: "number",
         bigint: "number",
         year: "number",
@@ -106,6 +109,7 @@ export class Schema {
         tinyint: 'Sequelize.INTEGER',
         smallint: 'Sequelize.INTEGER',
         int: 'Sequelize.INTEGER',
+        integer: 'Sequelize.INTEGER',
         mediumint: 'Sequelize.INTEGER',
         bigint: 'Sequelize.INTEGER',
         year: 'Sequelize.INTEGER',
@@ -269,6 +273,7 @@ interface ColumnDefinitionRow
     table_name:string;
     column_name:string;
     data_type:string;
+    ordinal_position:number;
 }
 
 interface ReferenceDefinitionRow
@@ -316,8 +321,61 @@ export function read(database:string, username:string, password:string, options:
             return;
         }
 
+        readCustomFields(rows);
+    }
+
+    function readCustomFields(originalRows:ColumnDefinitionRow[]):void {
+
+        if (!_.indexOf(originalRows, r => r.table_name == 'SequelizeCustomFieldDefinitions')) {
+            processTablesAndColumnsWithCustom(originalRows, {});
+            return;
+        }
+
+        var sql:string =
+            "select table_name, column_name, data_type, ordinal_position " +
+            "from SequelizeCustomFieldDefinitions " +
+            "order by table_name, ordinal_position";
+
+        sequelize
+            .query(sql)
+            .complete(processCustomFields);
+
+        function processCustomFields(err:Error, customFields:ColumnDefinitionRow[]):void {
+
+            if (err) {
+                callback(err, null);
+                return;
+            }
+
+            var customFieldLookup:util.Dictionary<ColumnDefinitionRow> =
+                    util.arrayToDictionary(customFields,'column_name');
+
+            var combined:ColumnDefinitionRow[] = originalRows.concat(customFields);
+            combined.sort(sortByTableNameThenOrdinalPosition);
+
+            processTablesAndColumnsWithCustom(combined, customFieldLookup);
+        }
+
+    }
+
+    function sortByTableNameThenOrdinalPosition(row1:ColumnDefinitionRow, row2:ColumnDefinitionRow):number {
+        return row1.table_name < row2.table_name
+                        ? -1
+                            : (row1.table_name > row2.table_name
+                                ? 1
+                                : ( row1.ordinal_position < row2.ordinal_position
+                                    ? -1
+                                    : ( row1.ordinal_position > row2.ordinal_position
+                                        ? 1
+                                        : 0)));
+    }
+
+    function processTablesAndColumnsWithCustom(rows:ColumnDefinitionRow[], customFieldLookup:util.Dictionary<ColumnDefinitionRow>):void {
+
         var tables:Array<Table> = [];
         var table:Table = new Table("");
+
+        schema = new Schema(tables);
 
         for(var index:number = 0; index<rows.length; index++)
         {
@@ -328,12 +386,14 @@ export function read(database:string, username:string, password:string, options:
                 table = new Table(row.table_name);
                 tables.push(table);
             }
+            var field:Field = new Field(row.column_name, row.data_type, table);
+            table.fields.push(field);
 
-            table.fields.push(new Field(row.column_name, row.data_type, table));
+            if (customFieldLookup[row.column_name] !== undefined) {
+                schema.calculatedFields.push(field);
+            }
         }
 
-        schema = new Schema(tables);
-        //callback(null, schema);
         readReferences();
     }
 

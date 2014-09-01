@@ -1747,9 +1747,11 @@ declare module sequelize
         where?:any;
 
         /**
-         * A list of the attributes (columns) that you want to select.
+         * A list of the attributes (columns) that you want to select. Each item can be a string for the name to include,
+         * or an array where the first item is string name to include or an expression, and second item in inner array
+         * is the alias.
          */
-        attributes?:Array<string>;
+        attributes?:Array<any>;
 
         /**
          * A list of associations to eagerly load. Supported is either { include?: [ Model1, Model2, ...] } or { include?:
