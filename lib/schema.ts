@@ -163,14 +163,14 @@ export class Table
         return tableName.charAt(0).toLowerCase() + tableName.substr(1);
     }
 
-    public nonReferenceFields():Field[] {
-        return this.fields.filter(f => !f.isReference);
+    public realDbFields():Field[] {
+        return this.fields.filter(f => !f.isReference && !f.isCalculated);
     }
 }
 
 export class Field
 {
-    constructor(public fieldName:string, public fieldType:string, public table:Table, public isReference:boolean = false)
+    constructor(public fieldName:string, public fieldType:string, public table:Table, public isReference:boolean = false, public isCalculated:boolean = false)
     {
 
     }
@@ -290,7 +290,7 @@ export function read(database:string, username:string, password:string, options:
     var sequelize:sequelize.Sequelize = new Sequelize(database, username, password, options);
 
     var sql:string =
-        "select table_name, column_name, data_type " +
+        "select table_name, column_name, data_type, ordinal_position " +
         "from information_schema.columns " +
         "where table_schema = '" + database + "' " +
         "order by table_name, ordinal_position";
@@ -386,10 +386,13 @@ export function read(database:string, username:string, password:string, options:
                 table = new Table(row.table_name);
                 tables.push(table);
             }
-            var field:Field = new Field(row.column_name, row.data_type, table);
+
+            var isCalculated:boolean = customFieldLookup[row.column_name] !== undefined;
+
+            var field:Field = new Field(row.column_name, row.data_type, table, false, isCalculated);;
             table.fields.push(field);
 
-            if (customFieldLookup[row.column_name] !== undefined) {
+            if (isCalculated) {
                 schema.calculatedFields.push(field);
             }
         }
