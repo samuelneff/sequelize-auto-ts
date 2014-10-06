@@ -44,10 +44,15 @@ export function initialize(database:string, username:string, password:string, op
         {
             timestamps: false,
             classMethods: {
-                get__tableNameSingular__:(__tableNameSingularCamel__:types.__tableNameSingular__Pojo) => {
+                get__tableNameSingular__:(__tableNameSingularCamel__:any) => {
                     var where:{[key:string]:any} = {};
-                    /*__each__ realDbFields */ if (__tableNameSingularCamel__['__fieldName__'] !== undefined) { where['__fieldName__'] = __tableNameSingularCamel__['__fieldName__']}
-                    return this.find({where: where});
+                    var id:number = parseInt(__tableNameSingularCamel__);
+                    if (isNaN(id)) {
+                        /*__each__ realDbFields */ if (__tableNameSingularCamel__['__fieldName__'] !== undefined) { where['__fieldName__'] = __tableNameSingularCamel__['__fieldName__']}
+                    } else {
+                        where['__idFieldName__'] = id;
+                    }
+                    return __tableName__.find({where: where});
                 }
             }
         });

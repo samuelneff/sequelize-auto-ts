@@ -20,6 +20,7 @@ export class Schema {
     public xrefs:Xref[] = [];
     public associations:Association[] = [];
     public calculatedFields:Array<Field> = [];
+    public views:Table[] = [];
 
     constructor(public tables:Array<Table>)
     {
@@ -166,6 +167,27 @@ export class Table
     public realDbFields():Field[] {
         return this.fields.filter(f => !f.isReference && !f.isCalculated);
     }
+    idField():Field {
+        return _.find(this.fields, f => f.isIdField());
+    }
+
+    idFieldName():string {
+        var idField:Field = this.idField();
+        if (idField === undefined) {
+            console.log('Unable to find ID field for type: ' + this.tableName);
+            return '!!cannotFindIdFieldOn' + this.tableName + '!!';
+        }
+        return idField.fieldName;
+    }
+
+    idFieldNameTitleCase():string {
+        var idField:Field = this.idField();
+        if (idField === undefined) {
+            console.log('Unable to find ID field for type: ' + this.tableName);
+            return '!!cannotFindIdFieldOn' + this.tableName + '!!';
+        }
+        return idField.fieldNameProperCase();
+    }
 }
 
 export class Field
@@ -184,7 +206,10 @@ export class Field
     {
         var translated:string = Schema.fieldTypeTranslations[this.fieldType];
         if (translated == undefined) {
-            console.log('Unable to translate field type:' + this.fieldType);
+            if (this.fieldType.length < 6 || this.fieldType.substr(0, 6) !== 'types.')
+            {
+                console.log('Unable to translate field type:' + this.fieldType);
+            }
             translated = this.fieldType;
         }
         return translated;
@@ -218,7 +243,7 @@ export class Field
 
     defineFieldType():string {
         if ( this == this.table.fields[0]) {
-            return '{type: "number", primaryKey: true, autoIncrement: true}';
+            return '{type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true}';
         } else if (this.table.tableName.substr(0,4) == 'Xref' && this == this.table.fields[1]) {
             return '{type: "number", primaryKey: true}';
         }
@@ -288,6 +313,9 @@ export function read(database:string, username:string, password:string, options:
 {
     var schema:Schema;
     var sequelize:sequelize.Sequelize = new Sequelize(database, username, password, options);
+    var tableLookup:util.Dictionary<Table> = {};
+    var xrefs:util.Dictionary<Xref> = {};
+    var associationsFound:util.Dictionary<boolean> = {};
 
     var sql:string =
         "select table_name, column_name, data_type, ordinal_position " +
@@ -326,7 +354,7 @@ export function read(database:string, username:string, password:string, options:
 
     function readCustomFields(originalRows:ColumnDefinitionRow[]):void {
 
-        if (!_.indexOf(originalRows, r => r.table_name == 'SequelizeCustomFieldDefinitions')) {
+        if (!_.any(originalRows, r => r.table_name == 'SequelizeCustomFieldDefinitions')) {
             processTablesAndColumnsWithCustom(originalRows, {});
             return;
         }
@@ -428,17 +456,13 @@ export function read(database:string, username:string, password:string, options:
             return;
         }
 
-        var tableLookup:util.Dictionary<Table> = {};
-        var xrefs:util.Dictionary<Xref> = {};
-        var associationsFound:util.Dictionary<boolean> = {};
-
         schema.tables.forEach(table => tableLookup[table.tableName] = table);
 
         rows.forEach(processReferenceRow);
 
         processReferenceXrefs();
 
-        callback(null, schema);
+        fixViewNames();
 
         function processReferenceRow(row:ReferenceDefinitionRow):void {
             if (row.table_name.length > 4 && row.table_name.substr(0, 4) == 'Xref')
@@ -552,5 +576,89 @@ export function read(database:string, username:string, password:string, options:
             }
         }
     }
+
+    function fixViewNames():void {
+
+        var tableNamesManyForms:string[] = [];
+
+        _.each(schema.tables, extrapolateTableNameForms);
+
+        _.each(schema.tables, fixViewName);
+
+        if (schema.views.length) {
+            addViewReferences();
+        }
+
+        callback(null, schema);
+
+        function extrapolateTableNameForms(table:Table, index:number, array:Table[]):void {
+
+            if (table.tableName === table.tableName.toLowerCase()) {
+                return;
+            }
+
+            tableNamesManyForms.push(table.tableName);
+            tableNamesManyForms.push(Sequelize.Utils.singularize(table.tableName));
+        }
+
+        function fixViewName(table:Table, index:number, array:Table[]):void {
+
+            if (table.tableName !== table.tableName.toLowerCase()) {
+                return;
+            }
+
+            schema.views.push(table);
+
+            _.each(tableNamesManyForms, fixViewNamePart);
+
+            function fixViewNamePart(otherTableNameForm:string, index:number, array:string[]):void {
+                var i:number = table.tableName.indexOf(otherTableNameForm.toLowerCase());
+                if (i < 0) {
+                    return;
+                }
+
+                var newTableName:string = '';
+
+                if (i !== 0) {
+                    newTableName = table.tableName.substr(0, i);
+                }
+
+                newTableName += otherTableNameForm;
+
+                if (table.tableName.length > i + otherTableNameForm.length + 1) {
+                    newTableName += table.tableName.charAt(i + otherTableNameForm.length).toUpperCase() +
+                                    table.tableName.substr(i + otherTableNameForm.length + 1);
+                }
+
+                table.tableName = newTableName;
+            }
+        }
+    }
+
+    function addViewReferences():void {
+        schema.views.forEach(addViewReference);
+    }
+
+    function addViewReference(view:Table, index:number, array:Table[]):void {
+        view.fields.forEach(addViewFieldReference);
+
+        function addViewFieldReference(field:Field, index:number, array:Field[]):void {
+            if (!field.isIdField()) {
+                return;
+            }
+
+            var otherTableName:string = Sequelize.Utils.pluralize(field.fieldNameProperCase().substr(0, field.fieldName.length - Schema.idSuffix.length), "en");
+
+            var otherTable:Table = tableLookup[otherTableName];
+            if (otherTable === undefined) {
+                console.log('Unable to find related table for view ' + view.tableName + '.' + field.fieldName + ', expected ' + otherTableName + '.');
+                return;
+            }
+
+            var reference:Reference = new Reference(otherTableName, view.tableName, undefined, field.fieldName);
+            schema.references.push(reference);
+        }
+    }
+
 }
 
