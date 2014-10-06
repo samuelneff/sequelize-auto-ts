@@ -657,6 +657,21 @@ export function read(database:string, username:string, password:string, options:
 
             var reference:Reference = new Reference(otherTableName, view.tableName, undefined, field.fieldName);
             schema.references.push(reference);
+
+            var otherTableSingular:string = Sequelize.Utils.singularize(otherTableName, 'en');
+
+            view.fields.push(new Field(
+                otherTableSingular,
+                'types.' + otherTableSingular + 'Pojo',
+                view,
+                true));
+
+            otherTable.fields.push(new Field(
+                util.camelCase(view.tableName),
+                'types.' + Sequelize.Utils.singularize(view.tableName, 'en') + 'Pojo[]',
+                otherTable,
+                true));
+
         }
     }
 
