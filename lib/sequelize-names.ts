@@ -31,8 +31,9 @@ export class CalculatedFields {
 }
 export var calculatedFields:CalculatedFields = new CalculatedFields();
 
+/*__ignore__*/ var __associationNameQuoted__:string;
 export class References {
-    /*__each__uniqueReferences */ __foreignKey__:types.Reference = { tableName: '__primaryTableName__', primaryKey: '__primaryKey__', foreignKey: '__foreignKey__'};
+    /*__each__uniqueReferences */ __foreignKey__:types.Reference = { tableName: '__primaryTableName__', primaryKey: '__primaryKey__', foreignKey: '__foreignKey__', as: __associationNameQuoted__};
 }
 
 export var references:References = new References();

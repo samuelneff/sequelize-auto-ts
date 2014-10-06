@@ -40,4 +40,5 @@ export interface Reference {
     tableName:string;
     primaryKey:string;
     foreignKey:string;
+    as:string;
 }
