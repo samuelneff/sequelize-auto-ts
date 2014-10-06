@@ -142,11 +142,54 @@ export class Schema {
         time: 'Sequelize.STRING',
         geometry: 'Sequelize.STRING'
     };
+
+    public uniqueReferences():Reference[] {
+        var u:Reference[] = [];
+
+        var foundIds:_.Dictionary<boolean> = {};
+
+        this.references.forEach(addReferenceIfUnique);
+
+        this.tables.forEach(addTablePrimaryKeys);
+
+        return u;
+
+        function addReferenceIfUnique(reference:Reference, index:number, array:Reference[]):void {
+            if (reference.isView || foundIds[reference.foreignKey]) {
+                return;
+            }
+
+            u.push(reference);
+
+            foundIds[reference.foreignKey] = true;
+        }
+
+        function addTablePrimaryKeys(table:Table, index:number, array:Table[]):void {
+            if (table.isView || table.tableName.substr(0,4) === 'Xref') {
+                return;
+            }
+            var pk:Field = table.fields[0];
+
+            if (foundIds[pk.fieldName]) {
+                return;
+            }
+            foundIds[pk.fieldName] = true;
+
+            var r:Reference = new Reference(table.tableName,
+                                            table.tableName,
+                                            undefined,
+                                            pk.fieldName,
+                                            pk.fieldName,
+                                            false);
+            u.push(r);
+        }
+    }
 }
 
 export class Table
 {
     fields:Array<Field> = [];
+    isView:boolean = false;
 
     constructor(public tableName:string)
     {
@@ -199,7 +242,7 @@ export class Field
 
     fieldNameProperCase():string
     {
-        return this.fieldName.charAt(0).toUpperCase() + this.fieldName.substr(1, this.fieldName.length - 1);
+        return toTitleCase(this.fieldName);
     }
 
     translatedFieldType():string
@@ -266,7 +309,9 @@ export class Reference {
     constructor(public primaryTableName:string,
                 public foreignTableName:string,
                 public associationName:string,
-                public foreignKey:string) {
+                public primaryKey:string,
+                public foreignKey:string,
+                public isView:boolean) {
 
     }
 
@@ -528,7 +573,9 @@ export function read(database:string, username:string, password:string, options:
                                             row.referenced_table_name,
                                             row.table_name,
                                             associationName,
-                                            row.column_name));
+                                            util.camelCase(Sequelize.Utils.singularize(row.referenced_table_name)) + toTitleCase(Schema.idSuffix),
+                                            row.column_name,
+                                            false));
         }
 
         function processReferenceXrefRow(row:ReferenceDefinitionRow):void {
@@ -606,7 +653,7 @@ export function read(database:string, username:string, password:string, options:
             if (table.tableName !== table.tableName.toLowerCase()) {
                 return;
             }
-
+            table.isView = true;
             schema.views.push(table);
 
             _.each(tableNamesManyForms, fixViewNamePart);
@@ -655,7 +702,13 @@ export function read(database:string, username:string, password:string, options:
                 return;
             }
 
-            var reference:Reference = new Reference(otherTableName, view.tableName, undefined, field.fieldName);
+            var reference:Reference = new Reference(otherTableName,
+                                                    view.tableName,
+                                                    undefined,
+                                                    field.fieldName,
+                                                    field.fieldName,
+                                                    true);
+
             schema.references.push(reference);
 
             var otherTableSingular:string = Sequelize.Utils.singularize(otherTableName, 'en');
@@ -677,3 +730,6 @@ export function read(database:string, username:string, password:string, options:
 
 }
 
+function toTitleCase(text:string):string {
+    return text.charAt(0).toUpperCase() + text.substr(1, text.length - 1);
+}

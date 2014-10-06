@@ -35,3 +35,9 @@ export interface __tableName__Model extends sequelize.Model<__tableNameSingular_
 }
 
 /*__endEach__*/
+
+export interface Reference {
+    tableName:string;
+    primaryKey:string;
+    foreignKey:string;
+}

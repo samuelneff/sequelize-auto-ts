@@ -10,6 +10,8 @@
 
 'depends typescript-client-server-compat.js';
 
+import types = require('./sequelize-types');
+
 export class TableNames {
     /*__each__ tables */ __tableName__:string = '__tableName__';
 }
@@ -29,8 +31,8 @@ export class CalculatedFields {
 }
 export var calculatedFields:CalculatedFields = new CalculatedFields();
 
-export class AssociationNames {
-    /*__each__ associations */ __associationName__:string = '__associationName__';
+export class References {
+    /*__each__uniqueReferences */ __foreignKey__:types.Reference = { tableName: '__primaryTableName__', primaryKey: '__primaryKey__', foreignKey: '__foreignKey__'};
 }
 
-export var associationNames:AssociationNames = new AssociationNames();
+export var references:References = new References();
