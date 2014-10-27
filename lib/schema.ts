@@ -354,6 +354,11 @@ interface ReferenceDefinitionRow
     referenced_column_name:string;
 }
 
+interface CustomFieldDefinitionRow extends ColumnDefinitionRow, ReferenceDefinitionRow
+{
+
+}
+
 export function read(database:string, username:string, password:string, options:sequelize.Options, callback:(err:Error, schema:Schema) => void):void
 {
     var schema:Schema;
@@ -361,6 +366,7 @@ export function read(database:string, username:string, password:string, options:
     var tableLookup:util.Dictionary<Table> = {};
     var xrefs:util.Dictionary<Xref> = {};
     var associationsFound:util.Dictionary<boolean> = {};
+    var customReferenceRows:ReferenceDefinitionRow[] = [];
 
     var sql:string =
         "select table_name, column_name, data_type, ordinal_position " +
@@ -405,7 +411,7 @@ export function read(database:string, username:string, password:string, options:
         }
 
         var sql:string =
-            "select table_name, column_name, data_type, ordinal_position " +
+            "select table_name, column_name, data_type, referenced_table_name, referenced_column_name, ordinal_position " +
             "from SequelizeCustomFieldDefinitions " +
             "order by table_name, ordinal_position";
 
@@ -413,7 +419,7 @@ export function read(database:string, username:string, password:string, options:
             .query(sql)
             .complete(processCustomFields);
 
-        function processCustomFields(err:Error, customFields:ColumnDefinitionRow[]):void {
+        function processCustomFields(err:Error, customFields:CustomFieldDefinitionRow[]):void {
 
             if (err) {
                 callback(err, null);
@@ -425,6 +431,8 @@ export function read(database:string, username:string, password:string, options:
 
             var combined:ColumnDefinitionRow[] = originalRows.concat(customFields);
             combined.sort(sortByTableNameThenOrdinalPosition);
+
+            customReferenceRows = _.where(customFields, cf => cf.referenced_table_name != null && cf.referenced_column_name != null);
 
             processTablesAndColumnsWithCustom(combined, customFieldLookup);
         }
@@ -453,6 +461,10 @@ export function read(database:string, username:string, password:string, options:
         for(var index:number = 0; index<rows.length; index++)
         {
             var row:ColumnDefinitionRow = rows[index];
+
+            if (row.table_name === 'SequelizeCustomFieldDefinitions') {
+                continue;
+            }
 
             if (row.table_name != table.tableName)
             {
@@ -504,6 +516,7 @@ export function read(database:string, username:string, password:string, options:
         schema.tables.forEach(table => tableLookup[table.tableName] = table);
 
         rows.forEach(processReferenceRow);
+        customReferenceRows.forEach(processReferenceRow);
 
         processReferenceXrefs();
 
@@ -533,25 +546,9 @@ export function read(database:string, username:string, password:string, options:
             var parentTable = tableLookup[row.referenced_table_name];
             var childTable = tableLookup[row.table_name];
 
-            // create array of children in parent, i.e., AccountPojo.leads:LeadPojo[]
-            parentTable.fields.push(new Field(
-                util.camelCase(row.table_name),                                     // Leads -> leads
-                Sequelize.Utils.singularize(row.table_name) + 'Pojo[]',             // Leads -> LeadPojo[]
-                parentTable,                                                        // Accounts table reference
-                true));
-
-            // create singular parent reference from child
-            childTable.fields.push(new Field(
-                util.camelCase(Sequelize.Utils.singularize(row.referenced_table_name)),    // Accounts -> account
-                Sequelize.Utils.singularize(row.referenced_table_name) + 'Pojo',           // Accounts -> AccountPojo
-                childTable,
-                true));
-
             var associationName:string;
 
-            if (row.column_name == row.referenced_column_name) {
-                associationName = undefined;
-            } else {
+            if (row.column_name !== row.referenced_column_name) {
 
                 // example, row.column_name is ownerUserID
                 // we want association to be called OwnerUsers
@@ -559,14 +556,34 @@ export function read(database:string, username:string, password:string, options:
                 // then take rest of prefix from foreign key
                 // then append the referenced table name
                 associationName = row.column_name.charAt(0).toUpperCase() +
-                                  row.column_name.substr(1, row.column_name.length - row.referenced_column_name.length - 1) +
-                                  row.referenced_table_name;
+                    row.column_name.substr(1, row.column_name.length - row.referenced_column_name.length - 1) +
+                    row.referenced_table_name;
 
                 if (!associationsFound[associationName]) {
                     schema.associations.push(new Association(associationName));
                     associationsFound[associationName] = true;
                 }
             }
+
+            // create array of children in parent, i.e., AccountPojo.leads:LeadPojo[]
+            // but not for custom fields
+            if (!row.hasOwnProperty('ordinal_position')) {
+                parentTable.fields.push(new Field(
+                    util.camelCase(row.table_name),                                     // Leads -> leads
+                    Sequelize.Utils.singularize(row.table_name) + 'Pojo[]',             // Leads -> LeadPojo[]
+                    parentTable,                                                        // Accounts table reference
+                    true));
+            }
+
+            // create singular parent reference from child
+            childTable.fields.push(new Field(
+                util.camelCase(Sequelize.Utils.singularize(
+                        associationName === undefined
+                            ? row.referenced_table_name                             // Accounts -> account
+                            : associationName)),                                    // ownerUserId -> OwnerUsers -> ownerUser
+                Sequelize.Utils.singularize(row.referenced_table_name) + 'Pojo',    // Accounts -> AccountPojo
+                childTable,
+                true));
 
             // tell Sequelize about the reference
             schema.references.push(new Reference(

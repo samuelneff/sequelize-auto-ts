@@ -3,14 +3,21 @@
     <properties>
       <sourceFilesUrls>
         <item url="file://$PROJECT_DIR$/node_modules/script-template/lib/index.js" />
-        <item url="file://$PROJECT_DIR$/lib/sequelize-names.js" />
-        <item url="file://$PROJECT_DIR$/lib/schema.js" />
-        <item url="file://$PROJECT_DIR$/lib/sequelize-models.js" />
-        <item url="file://$PROJECT_DIR$/lib/util.js" />
-        <item url="file://$PROJECT_DIR$/lib/cli.js" />
-        <item url="file://$PROJECT_DIR$/lib/sequelize-types.js" />
         <item url="file://$PROJECT_DIR$/lib/sequelize-auto-ts.js" />
+        <item url="file://$PROJECT_DIR$/lib/sequelize-names.js" />
+        <item url="file://$PROJECT_DIR$/examples/mysql-userdemo-generated/sequelize-models.js" />
+        <item url="file://$PROJECT_DIR$/examples/mysql-userdemo-generated/sequelize-types.js" />
+        <item url="file://$PROJECT_DIR$/lib/sequelize-models.js" />
+        <item url="file://$PROJECT_DIR$/lib/cli.js" />
+        <item url="file://$PROJECT_DIR$/examples/mysql-world-generated/sequelize-types.js" />
+        <item url="file://$PROJECT_DIR$/examples/mysql-world-generated/sequelize-models.js" />
         <item url="file://$PROJECT_DIR$/node_modules/script-template/tests/index.js" />
+        <item url="file://$PROJECT_DIR$/examples/mysql-world.js" />
+        <item url="file://$PROJECT_DIR$/lib/util.js" />
+        <item url="file://$PROJECT_DIR$/examples/mysql-userdemo-usage.js" />
+        <item url="file://$PROJECT_DIR$/examples/mysql-userdemo.js" />
+        <item url="file://$PROJECT_DIR$/lib/sequelize-types.js" />
+        <item url="file://$PROJECT_DIR$/lib/schema.js" />
       </sourceFilesUrls>
     </properties>
     <CLASSES>
@@ -627,22 +634,22 @@
       <root url="file://$PROJECT_DIR$/lib/sequelize-definitions.js" />
       <root url="file://$PROJECT_DIR$/lib/sequelize-definitions.js" />
       <root url="file://$PROJECT_DIR$/lib/auto-types.js" />
-      <root url="file://$PROJECT_DIR$/examples/mysql-world.js" />
       <root url="file://$PROJECT_DIR$/node_modules/script-template/lib/index.js" />
-      <root url="file://$PROJECT_DIR$/lib/sequelize-names.js" />
-      <root url="file://$PROJECT_DIR$/lib/schema.js" />
-      <root url="file://$PROJECT_DIR$/lib/util.js" />
-      <root url="file://$PROJECT_DIR$/node_modules/script-template/tests/index.js" />
-      <root url="file://$PROJECT_DIR$/examples/mysql-world-generated/sequelize-models.js" />
-      <root url="file://$PROJECT_DIR$/examples/mysql-world-generated/sequelize-types.js" />
-      <root url="file://$PROJECT_DIR$/examples/mysql-userdemo-usage.js" />
-      <root url="file://$PROJECT_DIR$/examples/mysql-userdemo.js" />
-      <root url="file://$PROJECT_DIR$/lib/sequelize-models.js" />
-      <root url="file://$PROJECT_DIR$/examples/mysql-userdemo-generated/sequelize-types.js" />
-      <root url="file://$PROJECT_DIR$/lib/cli.js" />
-      <root url="file://$PROJECT_DIR$/lib/sequelize-types.js" />
       <root url="file://$PROJECT_DIR$/lib/sequelize-auto-ts.js" />
+      <root url="file://$PROJECT_DIR$/lib/sequelize-names.js" />
       <root url="file://$PROJECT_DIR$/examples/mysql-userdemo-generated/sequelize-models.js" />
+      <root url="file://$PROJECT_DIR$/examples/mysql-userdemo-generated/sequelize-types.js" />
+      <root url="file://$PROJECT_DIR$/lib/sequelize-models.js" />
+      <root url="file://$PROJECT_DIR$/lib/cli.js" />
+      <root url="file://$PROJECT_DIR$/examples/mysql-world-generated/sequelize-types.js" />
+      <root url="file://$PROJECT_DIR$/examples/mysql-world-generated/sequelize-models.js" />
+      <root url="file://$PROJECT_DIR$/node_modules/script-template/tests/index.js" />
+      <root url="file://$PROJECT_DIR$/examples/mysql-world.js" />
+      <root url="file://$PROJECT_DIR$/lib/util.js" />
+      <root url="file://$PROJECT_DIR$/examples/mysql-userdemo-usage.js" />
+      <root url="file://$PROJECT_DIR$/lib/sequelize-types.js" />
+      <root url="file://$PROJECT_DIR$/examples/mysql-userdemo.js" />
+      <root url="file://$PROJECT_DIR$/lib/schema.js" />
     </CLASSES>
     <SOURCES />
   </library>
