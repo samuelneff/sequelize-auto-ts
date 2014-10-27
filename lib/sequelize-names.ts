@@ -12,6 +12,13 @@
 
 import types = require('./sequelize-types');
 
+export interface SequelizeNames {
+    TableNames: TableNames;
+    calculatedFields:CalculatedFields;
+    references:References;
+    /*__each__ tables */ __tableNameSingularCamel__Fields:__tableName__Fields;
+}
+
 export class TableNames {
     /*__each__ tables */ __tableName__:string = '__tableName__';
 }
