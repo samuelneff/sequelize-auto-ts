@@ -70,7 +70,8 @@ export class Schema {
 
     public static fieldTypeTranslations:util.Dictionary<string> = {
 
-        tinyint: "number",
+        tinyint: "boolean",
+
         smallint: "number",
         int: "number",
         integer: "number",

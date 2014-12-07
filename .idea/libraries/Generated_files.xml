@@ -1,25 +1,5 @@
 <component name="libraryTable">
-  <library name="Generated files" type="javaScript">
-    <properties>
-      <sourceFilesUrls>
-        <item url="file://$PROJECT_DIR$/node_modules/script-template/lib/index.js" />
-        <item url="file://$PROJECT_DIR$/lib/sequelize-auto-ts.js" />
-        <item url="file://$PROJECT_DIR$/lib/sequelize-names.js" />
-        <item url="file://$PROJECT_DIR$/examples/mysql-userdemo-generated/sequelize-models.js" />
-        <item url="file://$PROJECT_DIR$/examples/mysql-userdemo-generated/sequelize-types.js" />
-        <item url="file://$PROJECT_DIR$/lib/sequelize-models.js" />
-        <item url="file://$PROJECT_DIR$/lib/cli.js" />
-        <item url="file://$PROJECT_DIR$/examples/mysql-world-generated/sequelize-types.js" />
-        <item url="file://$PROJECT_DIR$/examples/mysql-world-generated/sequelize-models.js" />
-        <item url="file://$PROJECT_DIR$/node_modules/script-template/tests/index.js" />
-        <item url="file://$PROJECT_DIR$/examples/mysql-world.js" />
-        <item url="file://$PROJECT_DIR$/lib/util.js" />
-        <item url="file://$PROJECT_DIR$/examples/mysql-userdemo-usage.js" />
-        <item url="file://$PROJECT_DIR$/examples/mysql-userdemo.js" />
-        <item url="file://$PROJECT_DIR$/lib/sequelize-types.js" />
-        <item url="file://$PROJECT_DIR$/lib/schema.js" />
-      </sourceFilesUrls>
-    </properties>
+  <library name="Generated files">
     <CLASSES>
       <root url="file://$PROJECT_DIR$/lib/DefinitelyTyped/cryptojs/all-tests.js" />
       <root url="file://$PROJECT_DIR$/lib/DefinitelyTyped/cryptojs/test/lib-passwordbasedcipher-tests.js" />
