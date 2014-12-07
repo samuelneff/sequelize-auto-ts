@@ -1,0 +1,15 @@
+<component name="libraryTable">
+  <library name="Generated files" type="javaScript">
+    <properties>
+      <sourceFilesUrls>
+        <item url="file://$PROJECT_DIR$/lib/sequelize-types.js" />
+        <item url="file://$PROJECT_DIR$/lib/schema.js" />
+      </sourceFilesUrls>
+    </properties>
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/lib/sequelize-types.js" />
+      <root url="file://$PROJECT_DIR$/lib/schema.js" />
+    </CLASSES>
+    <SOURCES />
+  </library>
+</component>

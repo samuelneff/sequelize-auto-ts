@@ -248,13 +248,19 @@ export class Field
 
     translatedFieldType():string
     {
-        var translated:string = Schema.fieldTypeTranslations[this.fieldType];
+        var fieldType:string = this.fieldType;
+        var translated:string = Schema.fieldTypeTranslations[fieldType];
+
         if (translated == undefined) {
-            if (this.fieldType.length < 6 || this.fieldType.substr(0, 6) !== 'types.')
+            var fieldTypeLength:number = fieldType.length;
+            if (fieldTypeLength < 6 ||
+                (   fieldType.substr(0, 6) !== 'types.' &&
+                    fieldType.substr(fieldTypeLength - 4, 4) !== 'Pojo' &&
+                    fieldType.substr(fieldTypeLength - 6, 6) !== 'Pojo[]'))
             {
-                console.log('Unable to translate field type:' + this.fieldType);
+                console.log('Unable to translate field type:' + fieldType);
             }
-            translated = this.fieldType;
+            translated = fieldType;
         }
         return translated;
     }
