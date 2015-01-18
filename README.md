@@ -11,6 +11,10 @@ Use node to execute `lib\cli.ts` and pass in four required parameters: database,
 c:\sequelize-auto-ts>node lib\cli.ts world root rootPassword c:\my-project\src\models
 ```
 
+# Version 1.0.3 documentation
+
+I pushed version 1.0.3 to NPM on 1/18/15 but have not updated the documentation yet. This version has a lot of new features. I'll update the documentation as soon as I can. If there is anything specific that should be updated or questions you have please create an issue in GitHub.
+
 # Generated files
 
 sequelize-auto-ts will generate two custom files in the target directory and copy one or two definition files.
