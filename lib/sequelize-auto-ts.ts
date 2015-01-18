@@ -3,7 +3,7 @@
 
 import schema = require("./schema");
 import path = require("path");
-import ScriptTemplate = require("../node_modules/script-template/lib/index");
+var ScriptTemplate = require("script-template");
 import fs = require("fs");
 
 
@@ -57,7 +57,7 @@ function generateFromTemplate(options:GenerateOptions, schema:schema.Schema, tem
 
     var templateText:string = fs.readFileSync(path.join(__dirname, templateName), "utf8");
 
-    var engine:ScriptTemplate = new ScriptTemplate(templateText);
+    var engine = new ScriptTemplate(templateText);
     var genText:string = engine.run(schema);
 
     genText = translateReferences(genText, options);
