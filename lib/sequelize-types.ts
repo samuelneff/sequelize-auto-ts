@@ -21,6 +21,8 @@ import types = require('./sequelize-types'); // important so we can use same ful
 /*__ignore__*/ export interface __tableNameSingular__Pojo {}
 /*__ignore__*/ export interface __idFieldNameTitleCase__ {}
 
+var asserters:{[typeName:string]:(pojo:any, allowUndefined?:boolean) => void} = {};
+
 /*__startEach__ tables */
 
 //////////////////////////////////////////////////////////////////////////////
@@ -66,6 +68,7 @@ export function assertValid__tableNameSingular__(pojo:__tableNameSingular__Pojo,
         }
     }
 }
+asserters['__tableNameSingular__'] = assertValid__tableNameSingular__;
 
 
 
@@ -151,16 +154,9 @@ function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expec
             return;
     }
 
-    if (expectedType.substr(0,6) !== 'types.') {
-        expectedTypeErr();
-    }
-
-    var expectedPojoType = expectedType.substr(6);
-
     // one pojo of array of array of pojos?
-
-    if (expectedPojoType.length > 3 && expectedPojoType.substr(expectedPojoType.length - 3, 2) === '[]') {
-        var individualPojoType:string = expectedPojoType.substr(0, expectedPojoType.length - 6);
+    if (expectedType.length > 3 && expectedType.substr(expectedType.length - 3, 2) === '[]') {
+        var individualPojoType:string = expectedType.substr(0, expectedType.length - 6);
 
         var asserter:Function = this['assertValid' + individualPojoType];
         if (typeof asserter !== FUNCTION_TYPE) {
@@ -182,7 +178,7 @@ function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expec
         return;
     }
 
-    var asserter:Function = this['assertValid' + expectedPojoType.substr(0, expectedPojoType.length - 4)];
+    var asserter:Function = asserters[expectedType.substr(0, expectedType.length - 4)];
     if (typeof asserter !== FUNCTION_TYPE) {
         expectedTypeErr();
     }

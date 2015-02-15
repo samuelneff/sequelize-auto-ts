@@ -254,13 +254,19 @@ export class Field
         if (translated == undefined) {
             var fieldTypeLength:number = fieldType.length;
             if (fieldTypeLength < 6 ||
-                (   fieldType.substr(0, 6) !== 'types.' &&
-                    fieldType.substr(fieldTypeLength - 4, 4) !== 'Pojo' &&
-                    fieldType.substr(fieldTypeLength - 6, 6) !== 'Pojo[]'))
+                (   fieldType.substr(fieldTypeLength - 4, 4) !== 'Pojo' &&
+                    fieldType.substr(fieldTypeLength - 6, 6) !== 'Pojo[]')
+                )
             {
                 console.log('Unable to translate field type:' + fieldType);
             }
-            translated = fieldType;
+
+            if (fieldType.substr(0, 6) === 'types.') {
+                console.log('Removing types prefix from ' + fieldType);
+                translated = fieldType.substr(6);
+            } else {
+                translated = fieldType;
+            }
         }
         return translated;
     }
@@ -739,13 +745,13 @@ export function read(database:string, username:string, password:string, options:
 
             view.fields.push(new Field(
                 otherTableSingular,
-                'types.' + otherTableSingular + 'Pojo',
+                otherTableSingular + 'Pojo',
                 view,
                 true));
 
             otherTable.fields.push(new Field(
                 util.camelCase(view.tableName),
-                'types.' + Sequelize.Utils.singularize(view.tableName, 'en') + 'Pojo[]',
+                Sequelize.Utils.singularize(view.tableName, 'en') + 'Pojo[]',
                 otherTable,
                 true));
 
