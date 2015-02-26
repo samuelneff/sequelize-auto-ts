@@ -21,51 +21,12 @@ export class Schema {
     public associations:Association[] = [];
     public calculatedFields:Array<Field> = [];
     public views:Table[] = [];
+    public idFields:Field[] = [];
+    public idFieldLookup:util.Dictionary<boolean> = {};
 
     constructor(public tables:Array<Table>)
     {
 
-    }
-
-    public idFields():Array<Field>
-    {
-        var idSuffix = Schema.idSuffix;
-
-        if (idSuffix == null || !idSuffix.length)
-        {
-            return [];
-        }
-
-        var idFieldsProcessed:util.Dictionary<boolean> = {};
-        var idFields:Array<Field> = [];
-
-        var idSuffixLen:number = idSuffix.length;
-
-        for(var tableIndex:number = 0; tableIndex < this.tables.length; tableIndex++)
-        {
-            var table:Table = this.tables[tableIndex];
-
-            if (table == null || table.fields == null)
-            {
-                continue;
-            }
-
-            for(var fieldIndex:number = 0; fieldIndex < table.fields.length; fieldIndex++)
-            {
-                var field:Field = table.fields[fieldIndex];
-                var fieldName:string = field.fieldName;
-
-                if (!idFieldsProcessed[fieldName] &&
-                    fieldName.length > idSuffixLen &&
-                    fieldName.substr(fieldName.length - idSuffixLen, idSuffixLen).toLocaleLowerCase() == idSuffix)
-                {
-                    idFields.push(field);
-                    idFieldsProcessed[fieldName] = true;
-                }
-            }
-        }
-
-        return idFields;
     }
 
     public static fieldTypeTranslations:util.Dictionary<string> = {
@@ -192,7 +153,7 @@ export class Table
     fields:Array<Field> = [];
     isView:boolean = false;
 
-    constructor(public tableName:string)
+    constructor(public schema:Schema, public tableName:string)
     {
 
     }
@@ -236,6 +197,8 @@ export class Table
 
 export class Field
 {
+    public targetIdFieldType:string; // if this is a prefixed foreign key, then the name of the non-prefixed key is here
+
     constructor(public fieldName:string, public fieldType:string, public table:Table, public isReference:boolean = false, public isCalculated:boolean = false)
     {
 
@@ -282,16 +245,13 @@ export class Field
     }
 
     isIdField():boolean {
-        return Schema.idSuffix != null &&
-            Schema.idSuffix.length &&
-            this.fieldName.length > Schema.idSuffix.length &&
-            this.fieldName.substr(this.fieldName.length - Schema.idSuffix.length, Schema.idSuffix.length).toLowerCase() == Schema.idSuffix;
+        return this.targetIdFieldType != undefined || Boolean(this.table.schema.idFieldLookup[this.fieldName]);
     }
 
     customFieldType():string
     {
         return this.isIdField()
-            ? this.fieldNameProperCase()
+            ? (this.targetIdFieldType == undefined ? this.fieldNameProperCase() : this.targetIdFieldType)
             : this.isReference
                 ? this.fieldType
                 : this.translatedFieldType();
@@ -380,6 +340,7 @@ export function read(database:string, username:string, password:string, options:
     var xrefs:util.Dictionary<Xref> = {};
     var associationsFound:util.Dictionary<boolean> = {};
     var customReferenceRows:ReferenceDefinitionRow[] = [];
+    var idFieldLookup:util.Dictionary<boolean> = {};
 
     var sql:string =
         "select table_name, column_name, data_type, ordinal_position " +
@@ -467,9 +428,10 @@ export function read(database:string, username:string, password:string, options:
     function processTablesAndColumnsWithCustom(rows:ColumnDefinitionRow[], customFieldLookup:util.Dictionary<ColumnDefinitionRow>):void {
 
         var tables:Array<Table> = [];
-        var table:Table = new Table("");
-
         schema = new Schema(tables);
+
+        var table:Table = new Table(schema, "");
+
 
         for(var index:number = 0; index<rows.length; index++)
         {
@@ -481,7 +443,7 @@ export function read(database:string, username:string, password:string, options:
 
             if (row.table_name != table.tableName)
             {
-                table = new Table(row.table_name);
+                table = new Table(schema, row.table_name);
                 tables.push(table);
             }
 
@@ -494,6 +456,8 @@ export function read(database:string, username:string, password:string, options:
                 schema.calculatedFields.push(field);
             }
         }
+
+        processIdFields();
 
         readReferences();
     }
@@ -757,7 +721,88 @@ export function read(database:string, username:string, password:string, options:
 
         }
     }
+    
+    function processIdFields():void
+    {
+        var idSuffix = Schema.idSuffix;
 
+        if (idSuffix == null || !idSuffix.length)
+        {
+            return;
+        }
+
+        var idFields:Array<Field> = [];
+        
+        var idSuffixLen:number = idSuffix.length;
+
+        for(var tableIndex:number = 0; tableIndex < schema.tables.length; tableIndex++)
+        {
+            var table:Table = schema.tables[tableIndex];
+
+            if (table == null || table.fields == null || table.fields.length === 0)
+            {
+                continue;
+            }
+
+            var field:Field = table.fields[0];
+            var fieldName:string = field.fieldName;
+
+            if (!idFieldLookup[fieldName] &&
+                fieldName.length > idSuffixLen &&
+                fieldName.substr(fieldName.length - idSuffixLen, idSuffixLen).toLocaleLowerCase() == idSuffix)
+            {
+                idFields.push(field);
+                idFieldLookup[fieldName] = true;
+            }
+        }
+
+        schema.idFields = idFields;
+        schema.idFieldLookup = idFieldLookup;
+
+        processPrefixedForeignKeyTypes();
+    }
+
+    function processPrefixedForeignKeyTypes():void {
+
+        var idSuffix = Schema.idSuffix;
+        var idSuffixLen:number = idSuffix.length;
+
+        for(var tableIndex:number = 0; tableIndex < schema.tables.length; tableIndex++)
+        {
+            var table:Table = schema.tables[tableIndex];
+
+            if (table == null || table.fields == null || table.fields.length < 2)
+            {
+                continue;
+            }
+
+            // first field is never a prefixed foreign key
+            for(var fieldIndex:number = 1; fieldIndex < table.fields.length; fieldIndex++)
+            {
+                var field:Field = table.fields[fieldIndex];
+                var fieldName:string = field.fieldName;
+
+                if (!idFieldLookup[fieldName] &&
+                    fieldName.length > idSuffixLen &&
+                    fieldName.substr(fieldName.length - idSuffixLen, idSuffixLen).toLocaleLowerCase() == idSuffix)
+                {
+                    // not in lookup but is id field, so must be prefixed id field
+                    // ex. ownerUserId
+                    //
+                    // need to find the actual id field
+                    // ex. userId
+
+                    for(var c:number = 1; c<fieldName.length - 2; c++) {
+                        var rest:string = fieldName.charAt(c).toLowerCase() + fieldName.substr(c + 1);
+                        if (idFieldLookup[rest]) {
+                            // found it
+                            field.targetIdFieldType = rest.charAt(0).toUpperCase() + rest.substr(1);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 function toTitleCase(text:string):string {
