@@ -155,10 +155,10 @@ function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expec
     }
 
     // one pojo of array of array of pojos?
-    if (expectedType.length > 3 && expectedType.substr(expectedType.length - 3, 2) === '[]') {
+    if (expectedType.length > 3 && expectedType.substr(expectedType.length - 2, 2) === '[]') {
         var individualPojoType:string = expectedType.substr(0, expectedType.length - 6);
 
-        var asserter:Function = this['assertValid' + individualPojoType];
+        var asserter:Function = asserters[individualPojoType];
         if (typeof asserter !== FUNCTION_TYPE) {
             err();
         }
