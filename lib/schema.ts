@@ -432,6 +432,7 @@ export function read(database:string, username:string, password:string, options:
 
         var table:Table = new Table(schema, "");
 
+        var calculatedFieldsFound:_.Dictionary<boolean> = {};
 
         for(var index:number = 0; index<rows.length; index++)
         {
@@ -452,8 +453,9 @@ export function read(database:string, username:string, password:string, options:
             var field:Field = new Field(row.column_name, row.data_type, table, false, isCalculated);;
             table.fields.push(field);
 
-            if (isCalculated) {
+            if (isCalculated && !calculatedFieldsFound[field.fieldName]) {
                 schema.calculatedFields.push(field);
+                calculatedFieldsFound[field.fieldName] = true;
             }
         }
 
