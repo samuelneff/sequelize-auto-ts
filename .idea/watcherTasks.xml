@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ProjectTasksOptions">
-    <TaskOptions isEnabled="true">
+    <TaskOptions isEnabled="false">
       <option name="arguments" value="--sourcemap $FileName$ --module commonjs" />
       <option name="checkSyntaxErrors" value="false" />
       <option name="description" value="Compiles .ts files into .js files" />
@@ -29,4 +29,3 @@
     </TaskOptions>
   </component>
 </project>
-

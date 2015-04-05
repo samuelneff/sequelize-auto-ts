@@ -1,6 +1,6 @@
 {
     "name": "sequelize-auto-ts",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "author": "Samuel Neff <sam@serndesign.com> https://github.com/samuelneff",
     "description": "Generates Sequelize definition statements and TypeScript interfaces for tables in a database.",
     "keywords": ["Sequelize", "orm", "generate", "template", "script", "typescript"],

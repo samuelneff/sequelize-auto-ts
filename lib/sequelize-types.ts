@@ -83,13 +83,13 @@ var DATE_EXPECTED_TYPE:string = 'Date';
 var BUFFER_EXPECTED_TYPE:string = 'Buffer';
 var BUFFER_EXISTS:boolean = typeof Buffer !== 'undefined'; //in node exists, in js not, so only validate in node
 
-function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expectedType:string):boolean {
+function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expectedType:string):void {
 
     var value:any = pojo[fieldName];
     var actualType:string = typeof value;
 
     if (value === undefined || value === null) {
-        pojo[value] = undefined;
+        pojo[fieldName] = undefined;
         return;
     }
 
@@ -98,7 +98,7 @@ function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expec
             if (actualType !== BOOLEAN_TYPE && actualType !== NUMBER_TYPE) {
                 err();
             }
-            pojo[value] = Boolean(value);
+            pojo[fieldName] = Boolean(value);
             return;
 
         case NUMBER_TYPE:
