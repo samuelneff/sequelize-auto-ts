@@ -89,7 +89,6 @@ function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expec
     var actualType:string = typeof value;
 
     if (value === undefined || value === null) {
-        pojo[fieldName] = undefined;
         return;
     }
 
