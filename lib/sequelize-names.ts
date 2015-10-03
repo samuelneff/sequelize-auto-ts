@@ -20,7 +20,7 @@ export interface SequelizeNames {
 }
 
 export class TableNames {
-    /*__each__ tables */ __tableName__:string = '__tableName__';
+    /*__each__ tables */ __tableNameModel__:string = '__tableNameModel__';
 }
 export var tableNames:TableNames = new TableNames();
 
@@ -40,7 +40,7 @@ export var calculatedFields:CalculatedFields = new CalculatedFields();
 
 /*__ignore__*/ var __associationNameQuoted__:string;
 export class References {
-    /*__each__uniqueReferences */ __foreignKey__:types.Reference = { tableName: '__primaryTableName__', primaryKey: '__primaryKey__', foreignKey: '__foreignKey__', as: __associationNameQuoted__};
+    /*__each__uniqueReferences */ __foreignKey__:types.Reference = { tableName: '__primaryTableNameModel__', primaryKey: '__primaryKey__', foreignKey: '__foreignKey__', as: __associationNameQuoted__};
 }
 
 export var references:References = new References();

@@ -22,6 +22,13 @@ else
 function processFromCommandLines()
 {
     var args:Array<string> = process.argv.slice(2);
+    var modelFactory:boolean = false;
+
+    var i = args.indexOf('-mf');
+    if (i !== -1) {
+        modelFactory = true;
+        args.splice(i, 1);
+    }
 
     if (args.length < 4)
     {
@@ -29,12 +36,14 @@ function processFromCommandLines()
         process.exit(1);
     }
 
+
     var options:generator.GenerateOptions =
     {
         database: args[0],
         username: args[1],
         password: args[2],
         targetDirectory: args[3],
+        modelFactory: modelFactory,
         options: null
     };
 

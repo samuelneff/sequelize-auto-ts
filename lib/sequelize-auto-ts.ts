@@ -19,21 +19,19 @@ export interface GenerateOptions
     username:string;
     password:string;
     options:sequelize.Options;
+    modelFactory?:boolean;
 
     targetDirectory:string;
 }
-export function generate(options:GenerateOptions, callback?:(err:Error) => void):void
-{
-    if (callback == undefined)
-    {
-        callback = function(err:Error):void {};
+export function generate(options:GenerateOptions, callback?:(err:Error) => void):void {
+    if (callback == undefined) {
+        callback = function (err:Error):void {
+        };
     }
 
     schema.read(options.database, options.username, options.password, options.options,
-        function(err:Error, schema:schema.Schema)
-        {
-            if (err)
-            {
+        function (err:Error, schema:schema.Schema) {
+            if (err) {
                 callback(err);
                 return;
             }
@@ -44,9 +42,12 @@ export function generate(options:GenerateOptions, callback?:(err:Error) => void)
 
 function generateTypes(options:GenerateOptions, schema:schema.Schema, callback:(err:Error) => void):void
 {
+    schema.useModelFactory = options.modelFactory;
+
     generateFromTemplate(options, schema, "sequelize-types.ts", function(err:Error) {
         generateFromTemplate(options, schema, "sequelize-names.ts", function(err:Error) {
-            generateFromTemplate(options, schema, "sequelize-models.ts", callback);
+            var template:string = options.modelFactory ? "sequelize-model-factory.ts" : "sequelize-models.ts";
+            generateFromTemplate(options, schema, template, callback);
         });
     });
 }

@@ -1655,6 +1655,9 @@ declare module sequelize
          * error.
          */
         validate?:any;
+
+        // not documented, but in code
+        syncOnAssociation?:boolean;
     }
 
     interface QueryOptions {

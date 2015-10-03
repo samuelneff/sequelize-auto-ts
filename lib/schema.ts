@@ -24,6 +24,8 @@ export class Schema {
     public idFields:Field[] = [];
     public idFieldLookup:util.Dictionary<boolean> = {};
 
+    public useModelFactory:boolean = false;
+
     constructor(public tables:Array<Table>)
     {
 
@@ -142,7 +144,8 @@ export class Schema {
                                             undefined,
                                             pk.fieldName,
                                             pk.fieldName,
-                                            false);
+                                            false,
+                                            this);
             u.push(r);
         }
     }
@@ -165,8 +168,17 @@ export class Table
 
     public tableNameSingularCamel():string
     {
-        var tableName:string = this.tableNameSingular();
-        return tableName.charAt(0).toLowerCase() + tableName.substr(1);
+        return toCamelCase(this.tableNameSingular());
+    }
+
+    public tableNameCamel():string
+    {
+        return toCamelCase(this.tableName);
+    }
+
+    public tableNameModel():string
+    {
+        return this.schema.useModelFactory ? this.tableNameCamel() : this.tableName;
     }
 
     public realDbFields():Field[] {
@@ -284,8 +296,22 @@ export class Reference {
                 public associationName:string,
                 public primaryKey:string,
                 public foreignKey:string,
-                public isView:boolean) {
+                public isView:boolean,
+                private schema:Schema) {
 
+    }
+
+    public primaryTableNameCamel():string
+    {
+        return toCamelCase(this.primaryTableName);
+    }
+
+    public primaryTableNameModel():string {
+        return this.schema.useModelFactory ? this.primaryTableNameCamel() : this.primaryTableName;
+    }
+    public foreignTableNameCamel():string
+    {
+        return toCamelCase(this.foreignTableName);
     }
 
     associationNameQuoted():string {
@@ -304,6 +330,17 @@ export class Xref {
                 public xrefTableName:string) {
 
     }
+
+    public firstTableNameCamel():string
+    {
+        return toCamelCase(this.firstTableName);
+    }
+
+    public secondTableNameCamel():string
+    {
+        return toCamelCase(this.secondTableName);
+    }
+
 }
 
 // Associations are named foreign keys, like OwnerUserID
@@ -450,7 +487,7 @@ export function read(database:string, username:string, password:string, options:
 
             var isCalculated:boolean = customFieldLookup[row.column_name] !== undefined;
 
-            var field:Field = new Field(row.column_name, row.data_type, table, false, isCalculated);;
+            var field:Field = new Field(row.column_name, row.data_type, table, false, isCalculated);
             table.fields.push(field);
 
             if (isCalculated && !calculatedFieldsFound[field.fieldName]) {
@@ -571,7 +608,8 @@ export function read(database:string, username:string, password:string, options:
                                             associationName,
                                             util.camelCase(Sequelize.Utils.singularize(row.referenced_table_name)) + toTitleCase(Schema.idSuffix),
                                             row.column_name,
-                                            false));
+                                            false,
+                                            schema));
         }
 
         function processReferenceXrefRow(row:ReferenceDefinitionRow):void {
@@ -703,7 +741,8 @@ export function read(database:string, username:string, password:string, options:
                                                     undefined,
                                                     field.fieldName,
                                                     field.fieldName,
-                                                    true);
+                                                    true,
+                                                    schema);
 
             schema.references.push(reference);
 
@@ -809,4 +848,8 @@ export function read(database:string, username:string, password:string, options:
 
 function toTitleCase(text:string):string {
     return text.charAt(0).toUpperCase() + text.substr(1, text.length - 1);
+}
+
+function toCamelCase(text:string):string {
+    return text.charAt(0).toLowerCase() + text.substr(1);
 }
