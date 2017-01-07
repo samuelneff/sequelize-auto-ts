@@ -20,6 +20,9 @@ export var SEQUELIZE:sequelize.Sequelize;
 
 /*__each__ tables */ export var __tableName__:types.__tableName__Model;
 
+/*__each__ tables */ export var __tableNameCamel__:types.__tableName__Model;
+
+
 /*__ignore__*/ var __defineFieldType__;
 /*__ignore__*/ var __primaryTableName__:sequelize.Model<any, any>;
 /*__ignore__*/ var __foreignTableName__:sequelize.Model<any, any>;
@@ -38,7 +41,7 @@ export function initialize(database:string, username:string, password:string, op
 
     /*__startEach__ tables */
 
-    __tableName__ = <types.__tableName__Model> SEQUELIZE.define<types.__tableNameSingular__Instance, types.__tableNameSingular__Pojo>('__tableNameSingular__', {
+    __tableName__ = __tableNameCamel__ = <types.__tableName__Model> SEQUELIZE.define<types.__tableNameSingular__Instance, types.__tableNameSingular__Pojo>('__tableNameSingular__', {
         /*__each__ realDbFields, */'__fieldName__':__defineFieldType__
         },
         {

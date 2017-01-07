@@ -20,7 +20,7 @@ export interface SequelizeNames {
 }
 
 export class TableNames {
-    /*__each__ tables */ __tableNameModel__:string = '__tableNameModel__';
+    /*__each__ tables */ __tableNameModel__:string = '__tableName__';
 }
 export var tableNames:TableNames = new TableNames();
 

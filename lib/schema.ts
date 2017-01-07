@@ -584,11 +584,19 @@ export function read(database:string, username:string, password:string, options:
             // create array of children in parent, i.e., AccountPojo.leads:LeadPojo[]
             // but not for custom fields
             if (!row.hasOwnProperty('ordinal_position')) {
-                parentTable.fields.push(new Field(
-                    util.camelCase(row.table_name),                                     // Leads -> leads
-                    Sequelize.Utils.singularize(row.table_name) + 'Pojo[]',             // Leads -> LeadPojo[]
-                    parentTable,                                                        // Accounts table reference
-                    true));
+
+                // if a one table has two foreign keys to same parent table, we end up
+                // with two arrays but Sequelize actually only supports one, so we need
+                // to make sure we only create one field in the parent table
+
+                var fieldName = util.camelCase(row.table_name);
+                if (!parentTable.fields.some(f => f.fieldName === fieldName)) {
+                    parentTable.fields.push(new Field(
+                        util.camelCase(row.table_name),                                     // Leads -> leads
+                        Sequelize.Utils.singularize(row.table_name) + 'Pojo[]',             // Leads -> LeadPojo[]
+                        parentTable,                                                        // Accounts table reference
+                        true));
+                }
             }
 
             // create singular parent reference from child
