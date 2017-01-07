@@ -8,8 +8,6 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-'depends typescript-client-server-compat.js';
-
 import types = require('./sequelize-types');
 
 export interface SequelizeNames {
