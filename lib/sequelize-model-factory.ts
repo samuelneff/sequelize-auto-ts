@@ -23,20 +23,21 @@ export class Models {
     public SEQUELIZE:sequelize.Sequelize;
 
     /*__each__ tables */ public __tableNameCamel__:types.__tableName__Model;
+    /*__each__ tables */ public __tableName__:types.__tableName__Model;
 
     /*__ignore__*/ __primaryTableNameCamel__:sequelize.Model<any, any>;
     /*__ignore__*/ __foreignTableNameCamel__:sequelize.Model<any, any>;
     /*__ignore__*/ __firstTableNameCamel__:sequelize.Model<any, any>;
     /*__ignore__*/ __secondTableNameCamel__:sequelize.Model<any, any>;
 
-    constructor(database:string, username:string, password:string, options:sequelize.Options) {
+    constructor(database:string, username:string, password:string, options:sequelize.SequelizeOptions) {
 
         this.SEQUELIZE = new Sequelize(database, username, password, options);
         var self:Models = this;
 
         /*__startEach__ tables */
 
-        this.__tableNameCamel__ = <types.__tableName__Model> this.SEQUELIZE.define<types.__tableNameSingular__Instance, types.__tableNameSingular__Pojo>('__tableNameSingular__', {
+        this.__tableNameCamel__ = this.__tableName__ = <types.__tableName__Model> this.SEQUELIZE.define<types.__tableNameSingular__Instance, types.__tableNameSingular__Pojo>('__tableNameSingular__', {
                 /*__each__ realDbFields, */'__fieldName__': __defineFieldType__
             },
             {
@@ -68,8 +69,8 @@ export class Models {
 
         /*__startEach__ xrefs */
 
-        this.__firstTableNameCamel__.hasMany(this.__secondTableNameCamel__, {through: '__xrefTableName__'});
-        this.__secondTableNameCamel__.hasMany(this.__firstTableNameCamel__, {through: '__xrefTableName__'});
+        this.__firstTableNameCamel__.belongsToMany(this.__secondTableNameCamel__, {through: '__xrefTableName__'});
+        this.__secondTableNameCamel__.belongsToMany(this.__firstTableNameCamel__, {through: '__xrefTableName__'});
 
         /*__endEach__*/
     }
@@ -83,7 +84,7 @@ interface ModelCache {
 
 var modelsCache:{[key:string]: ModelCache} = {};
 
-export function forDatabase(database:string, username?:string, password?:string, options?:sequelize.Options):Models {
+export function forDatabase(database:string, username?:string, password?:string, options?:sequelize.SequelizeOptions):Models {
 
     var cache:ModelCache = modelsCache[database];
     if (cache !== undefined) {

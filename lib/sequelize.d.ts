@@ -1,6 +1,9 @@
+/// <reference path="../typings/bluebird/bluebird.d.ts" />
 /// <reference path="../typings/node/node.d.ts" />
 /// <reference path="../typings/lodash/lodash.d.ts" />
 /// <reference path="../typings/underscore.string/underscore.string.d.ts" />
+
+// 2.2.2016 @ v3.18
 
 declare module sequelize
 {
@@ -18,7 +21,7 @@ declare module sequelize
          *
          * @see Promise
          */
-        Promise:Promise;
+        Promise:typeof PromisePromise;
 
         /**
          * Exposes the validator.js object, so you can extend it with custom validation functions. The validator is exposed
@@ -76,6 +79,13 @@ declare module sequelize
         literal(val:any):Literal;
 
         /**
+         * Alias for 'literal'
+         *
+         * @param val Value to convert to a literal.
+         */
+        asIs(val:any):Literal;
+
+        /**
          * An AND query.
          *
          * @param args Each argument (string or object) will be joined by AND.
@@ -121,7 +131,7 @@ declare module sequelize
          * @param password password
          * @param options options. @see Options
          */
-        new(database:string, username:string, password:string, options:Options):Sequelize;
+        new(database:string, username:string, password:string, options:SequelizeOptions):Sequelize;
 
         /**
          * Instantiate sequelize with name of database, username, and options.
@@ -130,17 +140,22 @@ declare module sequelize
          * @param username user name
          * @param options options. @see Options
          */
-        new(database:string, username:string, options:Options):Sequelize;
+        new(database:string, username:string, options:SequelizeOptions):Sequelize;
 
         /**
          * Instantiate sequlize with an URI
          * @param connectionString A full database URI
          * @param options Options for sequelize. @see Options
          */
-        new(connectionString:string, options?:Options):Sequelize;
+        new(connectionString:string, options?:SequelizeOptions):Sequelize;
+
+        version:string;
+
+
+
     }
 
-    interface Sequelize extends SequelizeStaticAndInstance {
+    interface Sequelize extends SequelizeStaticAndInstance, Hooks {
         /**
          * Sequelize configuration (undocumented).
          */
@@ -149,7 +164,7 @@ declare module sequelize
         /**
          * Sequelize options (undocumented).
          */
-        options:Options;
+        options:SequelizeOptions;
 
         /**
          * Models are stored here under the name given to sequelize.define
@@ -176,13 +191,6 @@ declare module sequelize
          * Returns the singleton instance of QueryInterface.
          */
         getQueryInterface():QueryInterface;
-
-        /**
-         * Returns the singleton instance of Migrator.
-         * @param options Migration options
-         * @param force A flag that defines if the migrator should get instantiated or not.
-         */
-        getMigrator(options?:MigratorOptions, force?:boolean):Migrator;
 
         /**
          * Define a new model, representing a table in the DB.
@@ -223,91 +231,144 @@ declare module sequelize
          *
          * @param sql           SQL statement to execute.
          *
-         * @param callee        If callee is provided, the selected data will be used to build an instance of the DAO represented
-         *                      by the factory. Equivalent to calling Model.build with the values provided by the query.
-         *
          * @param options       Query options.
-         *
-         * @param replacements  Either an object of named parameter replacements in the format :param or an array of
-         *                      unnamed replacements to replace ? in your SQL.
          */
-        query(sql:string, callee?:Function, options?:QueryOptions, replacements?:any):EventEmitter;
+        query(sql:string, options?:QueryOptions):Promise<any[]>;
+
+        /**
+         * Execute a query which would set an environment or user variable. The variables are set per connection, so this function needs a transaction.
+         * Only works for MySQL.
+         *
+         * @param variables Object with multiple variables.
+         * @param options Query options.
+         * @param options.transaction The transaction that the query should be executed under
+         *
+         * @return {Promise}
+         */
+        set(variables:{[key:string]:any}, options?:SetOptions):Promise<any>;
+
+        /**
+         * Escape value.
+         *
+         * @param value
+         */
+        escape(value:string):string;
 
         /**
          * Create a new database schema.
          *
          * @param schema Name of the schema.
          */
-        createSchema(schema:string):EventEmitter;
+        createSchema(schema:string):Promise<any>;
 
         /**
          * Show all defined schemas.
          */
-        showAllSchemas():EventEmitter;
+        showAllSchemas():Promise<any>;
 
         /**
          * Drop a single schema.
          *
          * @param schema Name of the schema.
          */
-        dropSchema(schema):EventEmitter;
+        dropSchema(schema):Promise<any>;
 
         /**
          * Drop all schemas.
          */
-        dropAllSchemas():EventEmitter;
+        dropAllSchemas():Promise<any>;
 
         /**
          * Sync all defined DAOs to the DB.
          *
          * @param options Options.
          */
-        sync(options?:SyncOptions):EventEmitter;
+        sync(options?:SyncOptions):Promise<any>;
+
+        /**
+         * Truncate all tables defined through the sequelize models. This is done
+         * by calling Model.truncate() on each model.
+         *
+         * @param [options] The options passed to Model.destroy in addition to truncate
+         * @param [options.transaction]
+         * @param [options.logging] A function that logs sql queries, or false for no logging
+         * @return {Promise}
+         *
+         * @see {Model#truncate} for more information
+         */
+        truncate(options?:QueryOptions):Promise<void>;
 
         /**
          * Drop all tables defined through this sequelize instance. This is done by calling Model.drop on each model.
          *
          * @param options The options passed to each call to Model.drop.
          */
-        drop(options:DropOptions):EventEmitter;
+        drop(options?:DropOptions):Promise<any>;
 
         /**
          * Test the connection by trying to authenticate. Alias for 'validate'.
          */
-        authenticate():EventEmitter;
+        authenticate():Promise<any>;
 
         /**
          * Alias for authenticate(). Test the connection by trying to authenticate. Alias for 'validate'.
          */
-        validate():EventEmitter;
+        validate():Promise<any>;
 
         /**
-         * Start a transaction. When using transactions, you should pass the transaction in the options argument in order
-         * for the query to happen under that transaction.
+         * Returns database version
          *
-         * @param callback  Called when the transaction has been set up and is ready for use. Callback takes error and
-         *                  transaction arguments (overload available for just transaction argument too).
+         * @param options
          */
-        transaction(callback:(err:Error, transaction:Transaction) => void):Transaction;
+        databaseVersion(options?:QueryOptions):Promise<any>;
 
         /**
-         * Start a transaction. When using transactions, you should pass the transaction in the options argument in order
-         * for the query to happen under that transaction.
+         * Start a transaction. When using transactions, you should pass the transaction in the options argument
+         * in order for the query to happen under that transaction
          *
-         * @param options   Transaction options.
-         * @param callback  Called when the transaction has been set up and is ready for use. Callback takes error and
-         *                  transaction arguments (overload available for just transaction argument too).
-         */
-        transaction(options:TransactionOptions, callback:(err:Error, transaction:Transaction) => void):Transaction;
-
-        /**
-         * Start a transaction. When using transactions, you should pass the transaction in the options argument in order
-         * for the query to happen under that transaction.
+         * ```js
+         * sequelize.transaction().then(function (t) {
+             *   return User.find(..., { transaction: t}).then(function (user) {
+             *     return user.updateAttributes(..., { transaction: t});
+             *   })
+             *   .then(t.commit.bind(t))
+             *   .catch(t.rollback.bind(t));
+             * })
+         * ```
          *
-         * @param callback  Called when the transaction has been set up and is ready for use. Callback takes transaction
-         *                  argument (overload available for error and transaction arguments too).
+         * A syntax for automatically committing or rolling back based on the promise chain resolution is also
+         * supported:
+         *
+         * ```js
+         * sequelize.transaction(function (t) { // Note that we use a callback rather than a promise.then()
+             *   return User.find(..., { transaction: t}).then(function (user) {
+             *     return user.updateAttributes(..., { transaction: t});
+             *   });
+             * }).then(function () {
+             *   // Commited
+             * }).catch(function (err) {
+             *   // Rolled back
+             *   console.error(err);
+             * });
+         * ```
+         *
+         * If you have [CLS](https://github.com/othiym23/node-continuation-local-storage) enabled, the transaction
+         * will automatically be passed to any query that runs witin the callback. To enable CLS, add it do your
+         * project, create a namespace and set it on the sequelize constructor:
+         *
+         * ```js
+         * var cls = require('continuation-local-storage'),
+         *     ns = cls.createNamespace('....');
+         * var Sequelize = require('sequelize');
+         * Sequelize.cls = ns;
+         * ```
+         * Note, that CLS is enabled for all sequelize instances, and all instances will share the same namespace
+         *
+         * @param options Transaction Options
+         * @param autoCallback Callback for the transaction
          */
-        transaction(callback:(transaction:Transaction) => void):Transaction;
+        transaction(callback:(transaction:Transaction) => Promise<any>):Promise<Transaction>;
+        transaction(options?:TransactionOptions, callback?:(transaction:Transaction) => Promise<any>):Promise<Transaction>;
 
         /**
          * Start a transaction. When using transactions, you should pass the transaction in the options argument in order
@@ -318,6 +379,14 @@ declare module sequelize
          *                  argument (overload available for error and transaction arguments too).
          */
         transaction(options?:TransactionOptions, callback?:(transaction:Transaction) => void):Transaction;
+
+        /**
+         * Close all connections used by this sequelize instance, and free all references so the instance can be garbage collected.
+         *
+         * Normally this is done on process exit, so you only need to call this method if you are creating multiple instances, and want
+         * to garbage collect some of them.
+         */
+        close():void;
     }
 
     interface Config {
@@ -333,7 +402,7 @@ declare module sequelize
         ssl?:boolean;
         replication?:ReplicationOptions;
         dialectModulePath?:string;
-        maxConcurrentQueries?:number;
+        keepDefaultTimezone?:boolean;
         dialectOptions?:any;
     }
 
@@ -354,25 +423,26 @@ declare module sequelize
         tableName:string;
 
         options:DefineOptions;
+        primaryKeyAttributes:string[];
         attributes:any;
         rawAttributes:any;
         modelManager:ModelManager;
         daoFactoryManager:ModelManager;
-        associations:any;
+        associations:{[associationName:string]:Association};
         scopeObj:any;
 
         /**
          * Sync this Model to the DB, that is create the table. Upon success, the callback will be called with the model
          * instance (this).
          */
-        sync(options?:SyncOptions):PromiseT<Model<TInstance, TPojo>>;
+        sync(options?:SyncOptions):Promise<Model<TInstance, TPojo>>;
 
         /**
          * Drop the table represented by this Model.
          *
          * @param options
          */
-        drop(options?:DropOptions):Promise;
+        drop(options?:DropOptions):Promise<void>;
 
         /**
          * Apply a schema to this model. For postgres, this will actually place the schema in front of the table name -
@@ -408,7 +478,7 @@ declare module sequelize
          * @param queryOptions  Set the query options, e.g. raw, specifying that you want raw data instead of built
          *                      Instances. See sequelize.query for options.
          */
-        findAll(options?:FindOptions, queryOptions?:QueryOptions):PromiseT<Array<TInstance>>;
+        findAll(options?:FindOptions, queryOptions?:QueryOptions):Promise<Array<TInstance>>;
 
         /**
          * Search for a single instance. This applies LIMIT 1, so the listener will always be called with a single instance.
@@ -417,7 +487,7 @@ declare module sequelize
          * @param queryOptions  Set the query options, e.g. raw, specifying that you want raw data instead of built
          *                      Instances. See sequelize.query for options
          */
-        find(options?:FindOptions, queryOptions?:QueryOptions):PromiseT<TInstance>;
+        find(options?:FindOptions, queryOptions?:QueryOptions):Promise<TInstance>;
 
         /**
          * Run an aggregation method on the specified field.
@@ -426,23 +496,23 @@ declare module sequelize
          * @param aggregateFunction     The function to use for aggregation, e.g. sum, max etc.
          * @param options               Query options, particularly options.dataType.
          */
-        aggregate<V>(field:string, aggregateFunction:string, options:FindOptions):PromiseT<V>;
+        aggregate<V>(field:string, aggregateFunction:string, options:FindOptions):Promise<V>;
 
         /**
          * Count the number of records matching the provided where clause.
          *
          * @param options Conditions and options for the query.
          */
-        count(options?:FindOptions):PromiseT<number>;
+        count(options?:FindOptions):Promise<number>;
 
         /**
          * Find all the rows matching your query, within a specified offset / limit, and get the total number of rows
-         * matching your query. This is very usefull for paging.
+         * matching your query. This is very useful for paging.
          *
          * @param findOptions   Filtering options
          * @param queryOptions  Query options
          */
-        findAndCountAll(findOptions?:FindOptions, queryOptions?:QueryOptions):PromiseT<FindAndCountResult<TInstance>>;
+        findAndCountAll(findOptions?:FindOptions, queryOptions?:QueryOptions):Promise<FindAndCountResult<TInstance>>;
 
         /**
          * Find the maximum value of field.
@@ -450,7 +520,7 @@ declare module sequelize
          * @param field
          * @param options
          */
-        max<V>(field:string, options?:FindOptions):PromiseT<V>;
+        max<V>(field:string, options?:FindOptions):Promise<V>;
 
         /**
          * Find the minimum value of field.
@@ -458,7 +528,7 @@ declare module sequelize
          * @param field
          * @param options
          */
-        min<V>(field:string, options?:FindOptions):PromiseT<V>;
+        min<V>(field:string, options?:FindOptions):Promise<V>;
 
         /**
          * Find the sum of field.
@@ -466,7 +536,7 @@ declare module sequelize
          * @param field
          * @param options
          */
-        sum(field:string, options?:FindOptions):PromiseT<number>;
+        sum(field:string, options?:FindOptions):Promise<number>;
 
         /**
          * Builds a new model instance. Values is an object of key value pairs, must be defined but can be empty.
@@ -482,7 +552,7 @@ declare module sequelize
          * @param values
          * @param options
          */
-        create(values:TPojo, options?:CopyOptions):PromiseT<TInstance>;
+        create(values:TPojo, options?:CopyOptions):Promise<TInstance>;
 
         /**
          * Find a row that matches the query, or build (but don't save) the row if none is found. The successfull result
@@ -493,7 +563,7 @@ declare module sequelize
          * @param defaults  Default values to use if building a new instance
          * @param options   Options passed to the find call
          */
-        findOrInitialize(where:any, defaults?:TPojo, options?:QueryOptions):PromiseT<TInstance>;
+        findOrInitialize(where:any, defaults?:TPojo, options?:QueryOptions):Promise<TInstance>;
 
         /**
          * Find a row that matches the query, or build and save the row if none is found The successfull result of the
@@ -504,7 +574,7 @@ declare module sequelize
          * @param defaults  Default values to use if creating a new instance
          * @param options   Options passed to the find and create calls.
          */
-        findOrCreate(where:any, defaults?:TPojo, options?:FindOrCreateOptions):PromiseT<TInstance>;
+        findOrCreate(where:any, defaults?:TPojo, options?:FindOrCreateOptions):Promise<TInstance>;
 
         /**
          * Create and insert multiple instances in bulk.
@@ -512,12 +582,12 @@ declare module sequelize
          * @param records   List of objects (key/value pairs) to create instances from.
          * @param options
          */
-        bulkCreate(records:Array<TPojo>, options?:BulkCreateOptions):PromiseT<Array<TInstance>>;
+        bulkCreate(records:Array<TPojo>, options?:BulkCreateOptions):Promise<Array<TInstance>>;
 
         /**
          * Delete multiple instances.
          */
-        destroy(where?:any, options?:DestroyOptions):Promise;
+        destroy(where?:any, options?:DestroyOptions):Promise<any>;
 
         /**
          * Update multiple instances that match the where options.
@@ -526,19 +596,46 @@ declare module sequelize
          * @param where         Options to describe the scope of the search. Note that these options are not wrapped in a
          *                      { where: ... } is in find / findAll calls etc. This is probably due to change in 2.0.
          */
-        update(attrValueHash:TPojo, where:any, options?:UpdateOptions):Promise;
+        update(attrValueHash:TPojo, where:any, options?:UpdateOptions):Promise<any>;
+
+        /**
+         * Insert or update a single row. An update will be executed if a row which matches the supplied values on
+         * either the primary key or a unique key is found. Note that the unique index must be defined in your
+         * sequelize model and not just in the table. Otherwise you may experience a unique constraint violation,
+         * because sequelize fails to identify the row that should be updated.
+         *
+         * **Implementation details:**
+         *
+         * * MySQL - Implemented as a single query `INSERT values ON DUPLICATE KEY UPDATE values`
+         * * PostgreSQL - Implemented as a temporary function with exception handling: INSERT EXCEPTION WHEN
+         *   unique_constraint UPDATE
+         * * SQLite - Implemented as two queries `INSERT; UPDATE`. This means that the update is executed
+         * regardless
+         *   of whether the row already existed or not
+         *
+         * **Note** that SQLite returns undefined for created, no matter if the row was created or updated. This is
+         * because SQLite always runs INSERT OR IGNORE + UPDATE, in a single query, so there is no way to know
+         * whether the row was inserted or not.
+         */
+        upsert(values: TPojo, options?:UpsertOptions ):Promise<boolean>;
+        insertOrUpdate(values: TPojo, options?:UpsertOptions):Promise<boolean>;
 
         /**
          * Run a describe query on the table. The result will be return to the listener as a hash of attributes and their
          * types.
          */
-        describe():PromiseT<any>;
+        describe():Promise<any>;
 
         /**
          *  A proxy to the node-sql query builder, which allows you to build your query through a chain of method calls.
          *  The returned instance already has all the fields property populated with the field of the model.
          */
         dataset():any;
+    }
+
+    interface ModelReference<TInstance, TPojo> {
+        model:Model<TInstance, TPojo>;
+        key:string;
     }
 
     interface Instance<TInstance, TPojo> {
@@ -620,24 +717,24 @@ declare module sequelize
         /**
          * Validate this instance, and if the validation passes, persist it to the database.
          */
-        save(fields?:Array<string>, options?:SaveOptions):PromiseT<TInstance>;
+        save(fields?:Array<string>, options?:SaveOptions):Promise<TInstance>;
 
         /**
          * Refresh the current instance in-place, i.e. update the object with current data from the DB and return the same
          * object. This is different from doing a find(Instance.id), because that would create and return a new instance.
          * With this method, all references to the Instance are updated with the new data and no new objects are created.
          */
-        reload(options?:FindOptions):PromiseT<TInstance>;
+        reload(options?:FindOptions):Promise<TInstance>;
 
         /**
          * Validate the attribute of this instance according to validation rules set in the model definition.
          */
-        validate(options?:ValidateOptions):PromiseT<Error>;
+        validate(options?:ValidateOptions):Promise<ValidationError>;
 
         /**
          * This is the same as calling setAttributes, then calling save.
          */
-        updateAttributes(updates:TPojo, options:SaveOptions):PromiseT<TInstance>;
+        updateAttributes(updates:TPojo, options:SaveOptions):Promise<TInstance>;
 
         /**
          * Destroy the row corresponding to this instance. Depending on your setting for paranoid, the row will either be
@@ -645,7 +742,7 @@ declare module sequelize
          *
          * @param options   Allows caller to specify if delete should be forced.
          */
-        destroy(options?:DestroyInstanceOptions):Promise;
+        destroy(options?:DestroyInstanceOptions):Promise<number>;
 
         /**
          * Increment the value of one or more columns. This is done in the database, which means it does not use the
@@ -656,7 +753,7 @@ declare module sequelize
          *                  incremented by the value given.
          * @param options   Increment options.
          */
-        increment(fields:any, options?:IncrementOptions):Promise;
+        increment(fields:any, options?:IncrementOptions):Promise<any>;
 
         /**
          * Decrement the value of one or more columns. This is done in the database, which means it does not use the
@@ -667,7 +764,7 @@ declare module sequelize
          *                  decremented by the value given.
          * @param options   Decrement options.
          */
-        decrement(fields:any, options?:IncrementOptions):Promise;
+        decrement(fields:any, options?:IncrementOptions):Promise<any>;
 
         /**
          * Check whether all values of this and other Instance are the same.
@@ -899,12 +996,41 @@ declare module sequelize
         belongsTo<TInstance, TPojo>(target:Model<TInstance, TPojo>, options?:AssociationOptions):void;
 
         /**
-         * Create an association that is either 1:m or n:m.
+         * Create an 1:m association.
          *
          * @param target
          * @param options
          */
         hasMany<TInstance, TPojo>(target:Model<TInstance, TPojo>, options?:AssociationOptions):void;
+
+        /**
+         * Create an n:m association.
+         *
+         * @param target
+         * @param options
+         */
+        belongsToMany<TInstance, TPojo>(target:Model<TInstance, TPojo>, options?:AssociationOptions):void;
+    }
+
+    interface Association {
+        /**
+         * Type of association: 'BelongsTo', 'HasMany', or 'HasOne'.
+         */
+        associationType:string;
+        source:Model<any, any>;
+        target:Model<any, any>;
+        identifier:string;
+        targetAssociation:Association;
+        options:AssociationOptions;
+        sequelize:Sequelize;
+        isMultiAssociation:boolean;
+        isSelfAssociation:boolean;
+        isSingleAssociation:boolean; // defined on BelongsTo association only
+        doubleLinked:boolean;
+        as:string;
+        combinedTableName:string;
+        through:Model<any, any>; // initially in constructor can be model, string, or boolean, but is later normalized to always be a model (still in constructor)
+        isAliased:boolean;
     }
 
     /**
@@ -941,14 +1067,14 @@ declare module sequelize
          * Run the query chainer. In reality, this means, wait for all the added emitters to finish, since the queries
          * began executing as soon as you invoked their methods.
          */
-        run():EventEmitter;
+        run():Promise<any>;
 
         /**
          * Run the chainer serially, so that each query waits for the previous one to finish before it starts.
          *
          * @param options @see QueryChainerRunSeriallyOptions
          */
-        runSerially(options?:QueryChainerRunSeriallyOptions):EventEmitter;
+        runSerially(options?:QueryChainerRunSeriallyOptions):Promise<any>;
     }
 
     interface QueryInterface {
@@ -963,26 +1089,26 @@ declare module sequelize
          *
          * @param schema The schema to query. Applies only to Postgres.
          */
-        createSchema(schema?:string):EventEmitter;
+        createSchema(schema?:string):Promise<any>;
 
         /**
          * Drops the specified schema (table).
          *
          * @param schema The name of the table to drop.
          */
-        dropSchema(schema:string):EventEmitter;
+        dropSchema(schema:string):Promise<any>;
 
         /**
          * Drops all tables.
          */
-        dropAllSchemas():EventEmitter;
+        dropAllSchemas():Promise<any>;
 
         /**
          * Queries all table names in the database.
          *
          * @param options
          */
-        showAllSchemas(options?:QueryOptions):EventEmitter;
+        showAllSchemas(options?:QueryOptions):Promise<any>;
 
         /**
          * Creates a table with specified attributes.
@@ -1000,22 +1126,22 @@ declare module sequelize
          * @param tableName Table name.
          * @param options   Query options, particularly "force".
          */
-        dropTable(tableName:string, options?:QueryOptions):EventEmitter;
-        dropAllTables(options?:QueryOptions):EventEmitter;
-        dropAllEnums(options?:QueryOptions):EventEmitter;
-        renameTable(before:string, after:string):EventEmitter;
-        showAllTables(options?:QueryOptions):EventEmitter;
-        describeTable(tableName:string, options?:QueryOptions):EventEmitter;
-        addColumn(tableName:string, attributeName:any, dataTypeOrOptions?:any):EventEmitter;
-        removeColumn(tableName:string, attributeName:string):EventEmitter;
-        changeColumn(tableName:string, attributeName:string, dataTypeOrOptions:any):EventEmitter;
-        renameColumn(tableName:string, attrNameBefore:string, attrNameAfter:string):EventEmitter;
-        addIndex(tableName:string, attributes:Array<any>, options?:QueryOptions):EventEmitter;
-        showIndex(tableName, options?:QueryOptions):EventEmitter;
-        getForeignKeysForTables(tableNames:Array<string>):EventEmitter;
-        removeIndex(tableName:string, attributes:Array<string>):EventEmitter;
-        removeIndex(tableName:string, indexName:string):EventEmitter;
-        insert<TModel>(dao:TModel, tableName:string, values:any, options?:QueryOptions):EventEmitter;
+        dropTable(tableName:string, options?:QueryOptions):Promise<any>;
+        dropAllTables(options?:QueryOptions):Promise<any>;
+        dropAllEnums(options?:QueryOptions):Promise<any>;
+        renameTable(before:string, after:string):Promise<any>;
+        showAllTables(options?:QueryOptions):Promise<any>;
+        describeTable(tableName:string, options?:QueryOptions):Promise<any>;
+        addColumn(tableName:string, attributeName:any, dataTypeOrOptions?:any):Promise<any>;
+        removeColumn(tableName:string, attributeName:string):Promise<any>;
+        changeColumn(tableName:string, attributeName:string, dataTypeOrOptions:any):Promise<any>;
+        renameColumn(tableName:string, attrNameBefore:string, attrNameAfter:string):Promise<any>;
+        addIndex(tableName:string, attributes:Array<any>, options?:QueryOptions):Promise<any>;
+        showIndex(tableName, options?:QueryOptions):Promise<any>;
+        getForeignKeysForTables(tableNames:Array<string>):Promise<any>;
+        removeIndex(tableName:string, attributes:Array<string>):Promise<any>;
+        removeIndex(tableName:string, indexName:string):Promise<any>;
+        insert<TModel>(dao:TModel, tableName:string, values:any, options?:QueryOptions):Promise<any>;
         /**
          * Inserts several records into the specified table.
          * @param tableName     Table to insert into.
@@ -1023,16 +1149,17 @@ declare module sequelize
          * @param options       Query options
          * @param attributes    For Postgres only, used to identify if an attribute is auto-increment and thus handled specially.
          */
-        bulkInsert(tableName:string, records:Array<any>, options?:QueryOptions, attributes?:any):EventEmitter;
+        bulkInsert(tableName:string, records:Array<any>, options?:QueryOptions, attributes?:any):Promise<any>;
 
-        update<TModel>(dao:TModel, tableName:string, values:Array<any>, where:any, options?:QueryOptions):EventEmitter;
-        bulkUpdate(tableName:string, values:Array<any>, where:any, options?:QueryOptions, attributes?:any):EventEmitter;
-        delete<TModel>(dao:TModel, tableName:string, where:any, options?:QueryOptions):EventEmitter;
-        bulkDelete(tableName:string, where:any, options?:QueryOptions):EventEmitter;
-        bulkDelete<TModel>(tableName:string, where:any, options:QueryOptions, model:TModel):EventEmitter;
-        select<TModel>(factory:TModel, tableName:string, scope?:any, queryOptions?:QueryOptions):EventEmitter;
-        increment<TModel>(dao:TModel, tableName:string, values:Array<any>, where:any, options?:QueryOptions):EventEmitter;
-        rawSelect<TModel>(tableName:string, options:QueryOptions, attributeSelector:string, model:TModel):EventEmitter;
+        update<TModel>(dao:TModel, tableName:string, values:Array<any>, where:any, options?:QueryOptions):Promise<any>;
+        bulkUpdate(tableName:string, values:Array<any>, where:any, options?:QueryOptions, attributes?:any):Promise<any>;
+        delete<TModel>(dao:TModel, tableName:string, where:any, options?:QueryOptions):Promise<any>;
+        bulkDelete(tableName:string, where:any, options?:QueryOptions):Promise<any>;
+        bulkDelete<TModel>(tableName:string, where:any, options:QueryOptions, model:TModel):Promise<any>;
+        select<TModel>(factory:TModel, tableName:string, scope?:any, queryOptions?:QueryOptions):Promise<any>;
+        increment<TModel>(dao:TModel, tableName:string, values:Array<any>, where:any, options?:QueryOptions):Promise<any>;
+        rawSelect<TModel>(tableName:string, options:QueryOptions, attributeSelector:string, model:TModel):Promise<any>;
+
         /**
          * Postgres only. Creates a trigger on specified table to call the specified function with supplied parameters.
          *
@@ -1044,32 +1171,32 @@ declare module sequelize
          * @param functionParams
          * @param optionsArray
          */
-        createTrigger(tableName:string, triggerName:string, timingType:string, fireOnArray:Array<any>, functionName:string, functionParams:Array<any>, optionsArray:Array<string>):EventEmitter;
+        createTrigger(tableName:string, triggerName:string, timingType:string, fireOnArray:Array<any>, functionName:string, functionParams:Array<any>, optionsArray:Array<string>):Promise<any>;
         /**
          * Postgres only. Drops the specified trigger.
          *
          * @param tableName
          * @param triggerName
          */
-        dropTrigger(tableName:string, triggerName:string):EventEmitter;
-        renameTrigger(tableName:string, oldTriggerName:string, newTriggerName:string):EventEmitter;
-        createFunction(functionName:string, params:Array<any>, returnType:string, language:string, body:string, options?:QueryOptions):EventEmitter;
-        dropFunction(functionName:string, params:Array<any>):EventEmitter;
-        renameFunction(oldFunctionName:string, params:Array<any>, newFunctionName:string):EventEmitter;
+        dropTrigger(tableName:string, triggerName:string):Promise<any>;
+        renameTrigger(tableName:string, oldTriggerName:string, newTriggerName:string):Promise<any>;
+        createFunction(functionName:string, params:Array<any>, returnType:string, language:string, body:string, options?:QueryOptions):Promise<any>;
+        dropFunction(functionName:string, params:Array<any>):Promise<any>;
+        renameFunction(oldFunctionName:string, params:Array<any>, newFunctionName:string):Promise<any>;
         /**
          * Escape an identifier (e.g. a table or attribute name). If force is true,
          * the identifier will be quoted even if the `quoteIdentifiers` option is
          * false.
          */
-        quoteIdentifier(identifier:string, force:boolean):EventEmitter;
-        quoteTable(tableName:string):EventEmitter;
-        quoteIdentifiers(identifiers:string, force:boolean):EventEmitter;
-        escape(value:string):EventEmitter;
-        setAutocommit(transaction:Transaction, value:boolean):EventEmitter;
-        setIsolationLevel(transaction:Transaction, value:string):EventEmitter;
-        startTransaction(transaction:Transaction, options?:QueryOptions):EventEmitter;
-        commitTransaction(transaction:Transaction, options?:QueryOptions):EventEmitter;
-        rollbackTransaction(transaction:Transaction, options?:QueryOptions):EventEmitter;
+        quoteIdentifier(identifier:string, force:boolean):Promise<any>;
+        quoteTable(tableName:string):Promise<any>;
+        quoteIdentifiers(identifiers:string, force:boolean):Promise<any>;
+        escape(value:string):Promise<any>;
+        setAutocommit(transaction:Transaction, value:boolean):Promise<any>;
+        setIsolationLevel(transaction:Transaction, value:string):Promise<any>;
+        startTransaction(transaction:Transaction, options?:QueryOptions):Promise<any>;
+        commitTransaction(transaction:Transaction, options?:QueryOptions):Promise<any>;
+        rollbackTransaction(transaction:Transaction, options?:QueryOptions):Promise<any>;
     }
 
     interface QueryGenerator
@@ -1094,7 +1221,7 @@ declare module sequelize
         deleteQuery<TInstance, TPojo>(tableName:string, where:any, options:DestroyOptions, model:Model<TInstance, TPojo>):string;
         /**
          * Creates a query to increment a value. Note "options" here is an additional hash of values to update.
-         * 
+         *
          * @param tableName
          * @param attrValueHash
          * @param where
@@ -1212,7 +1339,7 @@ declare module sequelize
          * @param options       Query options.
          *
          */
-        query(sql:string, callee?:Function, options?:QueryOptions):EventEmitter;
+        query(sql:string, callee?:Function, options?:QueryOptions):Promise<any>;
     }
 
     interface ConnectorManager {
@@ -1228,7 +1355,7 @@ declare module sequelize
          * @param options       Query options.
          *
          */
-        query(sql:string, callee?:Function, options?:QueryOptions):EventEmitter;
+        query(sql:string, callee?:Function, options?:QueryOptions):Promise<any>;
 
         afterTransactionSetup(callback:() => void):void;
         connect():void;
@@ -1239,17 +1366,17 @@ declare module sequelize
 
     interface Migrator {
         queryInterface:QueryInterface;
-        migrate(options?:MigratorOptions):EventEmitter;
+        migrate(options?:MigratorOptions):Promise<any>;
         getUndoneMigrations(callback:(err:Error, result:Array<Migrator>) => void):void;
-        findOrCreateMetaDAO(syncOptions?:SyncOptions):EventEmitter;
-        exec(filename:string, options?:MigratorExecOptions):EventEmitter;
-        getLastMigrationFromDatabase():EventEmitter;
-        getLastMigrationIdFromDatabase():EventEmitter;
+        findOrCreateMetaDAO(syncOptions?:SyncOptions):Promise<any>;
+        exec(filename:string, options?:MigratorExecOptions):Promise<any>;
+        getLastMigrationFromDatabase():Promise<any>;
+        getLastMigrationIdFromDatabase():Promise<any>;
         getFormattedDateString(s:string):string;
         stringToDate(s:string):Date;
         saveSuccessfulMigration(from:Migration, to:Migration, callback:(metaData:MetaInstance) => void):void;
         deleteUndoneMigration(from:Migration, to:Migration, callback:() => void);
-        execute(options?:MigrationExecuteOptions):EventEmitter;
+        execute(options?:MigrationExecuteOptions):Promise<any>;
         isBefore(date:Date, options?:MigrationCompareOptions):boolean;
         isAfter(date:Date, options?:MigrationCompareOptions):boolean;
 
@@ -1266,92 +1393,14 @@ declare module sequelize
 
     }
 
-    interface EventEmitter extends NodeJS.EventEmitter {
-        /**
-         * Create a new emitter instance.
-         *
-         * @param handler
-         */
-        new(handler:(emitter:EventEmitter) => void):EventEmitter;
-
-        /**
-         * Run the function that was passed when the emitter was instantiated.
-         */
-        run():EventEmitter;
-
-        /**
-         * Listen for success events.
-         *
-         * @param onSuccess
-         */
-        success(onSuccess:(result:any) => void):EventEmitter;
-
-        /**
-         * Alias for success(handler). Listen for success events.
-         *
-         * @param onSuccess
-         */
-        ok(onSuccess:(result:any) => void):EventEmitter;
-
-        /**
-         * Listen for error events.
-         *
-         * @param onError
-         */
-        error(onError:(err:Error) => void):EventEmitter;
-
-        /**
-         * Alias for error(handler). Listen for error events.
-         *
-         * @param onError
-         */
-        fail(onError:(err:Error) => void):EventEmitter;
-
-        /**
-         * Alias for error(handler). Listen for error events.
-         *
-         * @param onError
-         */
-        failure(onError:(err:Error) => void):EventEmitter;
-
-        /**
-         * Listen for both success and error events.
-         *
-         * @param onDone
-         */
-        done(onDone:(err:Error, result:any) => void):EventEmitter;
-
-        /**
-         * Alias for done(handler). Listen for both success and error events.
-         *
-         * @param onDone
-         */
-        complete(onDone:(err:Error, result:any) => void):EventEmitter;
-
-        /**
-         * Attach a function that is called every time the function that created this emitter executes a query.
-         *
-         * @param onSQL
-         */
-        sql(onSQL:(sql:string) => void):EventEmitter;
-
-        /**
-         * Proxy every event of this event emitter to another one.
-         *
-         * @param emitter   The event emitter that should receive the events.
-         * @param options   Contains an array of the events to proxy. Defaults to sql, error and success
-         */
-        proxy(emitter:EventEmitter, options?:ProxyOptions):EventEmitter;
-
-
-    }
-
-    interface Options {
+    interface SequelizeOptions {
         /**
          * The dialect you of the database you are connecting to. One of mysql, postgres, sqlite and mariadb.
          * Default is mysql.
          */
         dialect?: string;
+
+        dialectOptions?: any;
 
         /**
          * If specified, load the dialect library from this path. For example, if you want to use pg.js instead of pg when
@@ -1374,6 +1423,8 @@ declare module sequelize
          */
         protocol?:string;
 
+        ssl?:any; // TODO type?
+
         /**
          * Default options for model definitions. See sequelize.define for options.
          */
@@ -1385,9 +1436,17 @@ declare module sequelize
         query?:QueryOptions;
 
         /**
+         * Default options for sequelize.set
+         */
+        set?:SetOptions;
+
+        /**
          * Default options for sequelize.sync
          */
         sync?:SyncOptions;
+
+        timezone?:string;
+        keepDefaultTimezone?:boolean;
 
         /**
          * Logging options. Function used to log. Default is console.log. Signature is (message:string) => void.
@@ -1422,7 +1481,7 @@ declare module sequelize
          * should be an object (a single server for handling writes), and read an array of object (several servers to
          * handle reads). Each read/write server can have the following properties?: host, port, username, password, database
          */
-        replication?:ReplicationOptions;
+        replication?:ReplicationOptions | boolean;
 
         /**
          * Connection pool options.
@@ -1440,6 +1499,14 @@ declare module sequelize
          * Language. Default "en".
          */
         language?:string;
+
+        hooks?:any;
+        retry?:RetryOptions;
+        transactionType?:string;
+        isolationLevel?:string;
+        databaseVersion?:number;
+        typeValidation?:boolean;
+        benchmark?:boolean;
     }
 
     interface PoolOptions {
@@ -1465,7 +1532,7 @@ declare module sequelize
         /**
          * A string or a data type
          */
-        type?:string;
+            type?:string;
 
         /**
          * If false, the column will have a NOT NULL constraint, and a not null validation will be run before an instance
@@ -1498,12 +1565,7 @@ declare module sequelize
         /**
          * If this column references another table, provide it here as a Model, or a string.
          */
-        references?:any;
-
-        /**
-         * The column of the foreign table that this column references. Default 'id'.
-         */
-        referencesKey?:string;
+        references?:string|ModelReference<any, any>;
 
         /**
          * What should happen when the referenced key is updated. One of CASCADE, RESTRICT, SET DEFAULT, SET NULL or
@@ -1539,6 +1601,17 @@ declare module sequelize
     }
 
     interface DefineOptions {
+
+        /**
+         * The name of the model. The model will be stored in `sequelize.models` under this name
+         */
+        modelName?:string;
+
+        /**
+         *
+         */
+        attributes?:{[key:string]:any};
+
         /**
          * Define the default search scope to use for this model. Scopes have the same form as the options passed to
          * find / findAll.
@@ -1552,7 +1625,7 @@ declare module sequelize
         scopes?:any;
 
         /**
-         * Don't persits null values. This means that all columns with null values will not be saved.
+         * Don't persists null values. This means that all columns with null values will not be saved.
          */
         omitNull?:boolean;
 
@@ -1680,7 +1753,12 @@ declare module sequelize
          *
          * Default is SELECT.
          */
-        type?:string;
+            type?:string;
+
+        /**
+         * Sets the query type to `SELECT` and return a single row
+         */
+        nest?:boolean;
 
         /**
          * Lock the selected rows in either share or update mode. Possible options are transaction.LOCK.UPDATE and
@@ -1689,10 +1767,72 @@ declare module sequelize
         lock?:string;
 
         /**
-         * For aggregate function calls, the type of the result. If field is a field in this Model, the default will be the
-         * type of that field, otherwise defaults to float.
+         * Either an object of named parameter replacements in the format `:param` or an array of unnamed replacements to replace `?` in your SQL.
          */
-        dataType?:any;
+        replacements?:any;
+
+        /**
+         * Either an object of named bind parameter in the format `$param` or an array of unnamed bind parameter to replace `$1, $2, ...` in your SQL.
+         */
+        bind?:any;
+
+        /**
+         * Force the query to use the write pool, regardless of the query type.
+         */
+        useMaster?:boolean;
+
+        /**
+         * A function that gets executed while running the query to log the sql.
+         */
+        logging?:boolean|{(message:string):void};
+
+        /**
+         * A sequelize instance used to build the return instance
+         */
+        instance?:Instance<any, any>;
+
+        /**
+         * A sequelize model used to build the returned model instances (used to be called callee)
+         */
+        model?:Model<any, any>;
+
+        /**
+         * Set of flags that control when a query is automatically retried.
+         */
+        retry?:RetryOptions;
+
+        /**
+         * An optional parameter to specify the schema search_path (Postgres only)
+         */
+        searchPath?:string;
+
+        /**
+         * If false do not prepend the query with the search_path (Postgres only)
+         */
+        supportsSearchPath?:boolean;
+
+        /**
+         * Map returned fields to model's fields if `options.model` or `options.instance` is present. Mapping will occur before building the model instance.
+         */
+        mapToModel?:boolean;
+
+        /**
+         * Map returned fields to arbitrary names for `SELECT` query type.
+         */
+        fieldMap?:{[key:string]:string};
+    }
+
+    interface RetryOptions {
+
+        /**
+         * Only retry a query if the error matches one of these strings.
+         */
+        match:string[];
+
+        /**
+         * How many times a failing query is automatically retried.
+         */
+        max:number;
     }
 
     interface SyncOptions {
@@ -1839,7 +1979,7 @@ declare module sequelize
         ignoreDuplicates?:boolean;
     }
 
-    interface DestroyOptions {
+    interface DestroyOptions extends QueryOptions {
         /**
          * If set to true, destroy will find all records within the where parameter and will execute before-/ after
          * bulkDestroy hooks on each row.
@@ -1865,15 +2005,13 @@ declare module sequelize
         force:boolean;
     }
 
-    interface InsertOptions 
-    {
+    interface InsertOptions {
         limit?:number;
         returning?:string;
-        allowNull?:string;        
+        allowNull?:string;
     }
-    
-    interface UpdateOptions 
-    {
+
+    interface UpdateOptions extends QueryOptions {
         /**
          * Should each row be subject to validation before it is inserted. The whole insert will fail if one row fails
          * validation. Default true.
@@ -1889,6 +2027,25 @@ declare module sequelize
          * How many rows to update (only for mysql and mariadb).
          */
         limit?:number;
+    }
+
+    interface UpsertOptions {
+
+        /**
+         * Run validations before the row is inserted
+         */
+        validate? : boolean;
+
+        /**
+         * The fields to insert / update. Defaults to all fields
+         */
+        fields? : string[];
+
+        /**
+         * A function that gets executed while running the query to log the sql.
+         */
+        logging? : boolean | Function;
+
     }
 
     interface SetOptions {
@@ -1935,14 +2092,13 @@ declare module sequelize
         transaction?:Transaction;
     }
 
-    interface IndexOptions
-    {
+    interface IndexOptions {
         indicesType?:string;
         indexType?:string;
         indexName?:string;
         parser?:any;
     }
-    
+
     interface ProxyOptions {
         /**
          * An array of the events to proxy. Defaults to sql, error and success.
@@ -1971,7 +2127,7 @@ declare module sequelize
          * provide the same alias when eager loading and when getting assocated models. Defaults to the singularized
          * version of target.name
          */
-        as?:string;
+            as?:string;
 
         /**
          * The name of the foreign key in the target table. Defaults to the name of source + primary key of source.
@@ -1996,23 +2152,20 @@ declare module sequelize
         constraints?:boolean;
     }
 
-    interface TriggerOptions
-    {
+    interface TriggerOptions {
         insert?:Array<string>;
         update?:Array<string>;
         delete?:Array<string>;
         truncate?:Array<string>;
     }
 
-    interface TriggerParam
-    {
+    interface TriggerParam {
         type:string;
         direction?:string;
         name?:string;
     }
 
-    interface SelectOptions
-    {
+    interface SelectOptions {
         limit?:number;
         offset?:number;
         attributes?:Array<any>;
@@ -2033,8 +2186,7 @@ declare module sequelize
         lock?:string;
     }
 
-    interface HashToWhereConditionsOption
-    {
+    interface HashToWhereConditionsOption {
         include?:boolean;
         keysEscaped?:boolean;
     }
@@ -2085,7 +2237,7 @@ declare module sequelize
         /**
          * The type to cast it to.
          */
-        type:string;
+            type:string;
     }
 
     interface Literal {
@@ -2137,8 +2289,7 @@ declare module sequelize
         skipOnError:boolean;
     }
 
-    interface CreateTableQueryOptions
-    {
+    interface CreateTableQueryOptions {
         comment?:string;
         uniqueKeys?:Array<any>;
         charset?:string;
@@ -2159,133 +2310,6 @@ declare module sequelize
          * Default false.
          */
         withoutEquals: boolean;
-    }
-
-    interface Promise {
-        /**
-         * Listen for events, event emitter style. Mostly for backwards compatibility with EventEmitter.
-         *
-         * @param evt Event
-         * @param fct Handler
-         */
-        on(evt:string, fct:() => void):void;
-
-        /**
-         * Emit an event from the emitter.
-         *
-         * @param type  The type of event.
-         * @param value All other arguments will be passed to the event listeners.
-         */
-        emit(type:string, ...value:Array<any>):void;
-
-        /**
-         * Listen for success events.
-         */
-        success(onSuccess:() => void):Promise;
-
-        /**
-         * Alias for success(handler). Listen for success events.
-         */
-        ok(onSuccess:() => void):Promise;
-
-        /**
-         * Listen for error events.
-         *
-         * @param onError Error handler.
-         */
-        error(onError:(err?:Error) => void):Promise;
-
-        /**
-         * Alias for error(handler). Listen for error events.
-         *
-         * @param onError Error handler.
-         */
-        fail(onError:(err?:Error) => void):Promise;
-
-        /**
-         * Alias for error(handler). Listen for error events.
-         *
-         * @param onError Error handler.
-         */
-        failure(onError:(err?:Error) => void):Promise;
-
-        /**
-         * Listen for both success and error events..
-         */
-        done(handler:(err:Error, result?:any) => void):Promise;
-
-        /**
-         * Alias for done(handler). Listen for both success and error events..
-         */
-        complete(handler:(err:Error, result?:any) => void):Promise;
-
-        /**
-         * Attach a function that is called every time the function that created this emitter executes a query.
-         *
-         * @param onSQL
-         */
-        sql(onSQL:(sql:string) => void):Promise;
-
-        /**
-         * Proxy every event of this promise to another one.
-         *
-         * @param promise   The promise that should receive the events.
-         * @param options   Contains an array of the events to proxy. Defaults to sql, error and success
-         */
-        proxy(promise:Promise, options?:ProxyOptions):Promise;
-    }
-
-    interface PromiseT<T> extends Promise {
-        /**
-         * Listen for events, event emitter style. Mostly for backwards compatibility with EventEmitter.
-         *
-         * @param evt Event
-         * @param fct Handler
-         */
-        on(evt:string, fct:(t:T) => void):void;
-
-        /**
-         * Emit an event from the emitter.
-         *
-         * @param type  The type of event.
-         * @param value All other arguments will be passed to the event listeners.
-         */
-        emit(type:string, ...value:Array<T>):void;
-
-        /**
-         * Listen for success events.
-         */
-        success(onSuccess:(t:T) => void):PromiseT<T>;
-
-        /**
-         * Alias for success(handler). Listen for success events.
-         */
-        ok(onSuccess:(t:T) => void):PromiseT<T>;
-
-        /**
-         * Listen for both success and error events..
-         */
-        done(handler:(err:Error, result:T) => void):PromiseT<T>;
-
-        /**
-         * Alias for done(handler). Listen for both success and error events..
-         */
-        complete(handler:(err:Error, result:T) => void):PromiseT<T>;
-
-        /**
-         * Attach a function that is called every time the function that created this emitter executes a query.
-         *
-         * @param onSQL
-         */
-        sql(onSQL:(sql:string) => void):PromiseT<T>;
-
-        /**
-         * Proxy every event of this promise to another one.
-         *
-         * @param promise   The promise that should receive the events.
-         * @param options   Contains an array of the events to proxy. Defaults to sql, error and success
-         */
-        proxy(promise:PromiseT<T>, options?:ProxyOptions):PromiseT<T>;
     }
 
     interface Utils {
@@ -2363,8 +2387,7 @@ declare module sequelize
 
         validateParameter(value:any, expectation:any):boolean;
 
-        CustomEventEmitter:EventEmitter;
-        Promise:Promise;
+        Promise:Promise<any>;
         QueryChainer:QueryChainer;
         Lingo:any; // external project, no definitions yet}
     }
@@ -2387,6 +2410,7 @@ declare module sequelize
         from: string;
         to: string;
     }
+
     interface MetaInstance extends MetaPojo, Model<MetaInstance, MetaPojo> {
 
     }
@@ -2447,4 +2471,5 @@ declare module sequelize
         ARRAY:DataTypeArray;
         HSTORE:DataTypeHstore;
     }
+
 }

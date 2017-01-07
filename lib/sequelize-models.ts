@@ -27,7 +27,7 @@ export var SEQUELIZE:sequelize.Sequelize;
 /*__ignore__*/ var __secondTableName__:sequelize.Model<any, any>;
 /*__ignore__*/ var __associationNameQuoted__:string;
 
-export function initialize(database:string, username:string, password:string, options:sequelize.Options):any
+export function initialize(database:string, username:string, password:string, options:sequelize.SequelizeOptions):any
 {
     if (initialized)
     {
@@ -67,8 +67,8 @@ export function initialize(database:string, username:string, password:string, op
 
     /*__startEach__ xrefs */
 
-    __firstTableName__.hasMany(__secondTableName__, { through: '__xrefTableName__'});
-    __secondTableName__.hasMany(__firstTableName__, { through: '__xrefTableName__'});
+    __firstTableName__.belongsToMany(__secondTableName__, { through: '__xrefTableName__'});
+    __secondTableName__.belongsToMany(__firstTableName__, { through: '__xrefTableName__'});
 
     /*__endEach__*/
 
