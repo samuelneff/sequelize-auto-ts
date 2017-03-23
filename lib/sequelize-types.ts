@@ -21,7 +21,7 @@ import types = require('./sequelize-types'); // important so we can use same ful
 /*__ignore__*/ export interface __tableNameSingular__Pojo {}
 /*__ignore__*/ export interface __idFieldNameTitleCase__ {}
 
-var asserters:{[typeName:string]:(pojo:any, allowUndefined?:boolean) => void} = {};
+const asserters:{[typeName:string]:(pojo:any, allowUndefined?:boolean) => void} = {};
 
 /*__startEach__ tables */
 
@@ -54,12 +54,12 @@ export function assertValid__tableNameSingular__(pojo:__tableNameSingular__Pojo,
         }
         throw new Error('Invalid __tableNameSingular__ provided. It is \'' + (typeof pojo) + '\'.');
     }
-    var fieldNames:string[] = Object.keys(pojo);
+    const fieldNames:string[] = Object.keys(pojo);
     if (fieldNames.length === 0) {
         throw new Error('Invalid __tableNameSingular__ provided. It is an empty object.');
     }
 
-    var i:number = fieldNames.length;
+    let i:number = fieldNames.length;
     while(i-- > 0) {
         switch(fieldNames[i]) {
             /*__each__ fields */ case '__fieldName__': assertValidFieldType('__tableNameSingular__', '__fieldName__', pojo, '__translatedFieldType__'); break;
@@ -75,18 +75,18 @@ asserters['__tableNameSingular__'] = assertValid__tableNameSingular__;
 
 /*__endEach__*/
 
-var BOOLEAN_TYPE:string = typeof(true);
-var NUMBER_TYPE:string = typeof(1);
-var STRING_TYPE:string = typeof('');
-var FUNCTION_TYPE:string = typeof(function() {});
-var DATE_EXPECTED_TYPE:string = 'Date';
-var BUFFER_EXPECTED_TYPE:string = 'Buffer';
-var BUFFER_EXISTS:boolean = typeof Buffer !== 'undefined'; //in node exists, in js not, so only validate in node
+const BOOLEAN_TYPE:string = typeof(true);
+const NUMBER_TYPE:string = typeof(1);
+const STRING_TYPE:string = typeof('');
+const FUNCTION_TYPE:string = typeof(function() {});
+const DATE_EXPECTED_TYPE:string = 'Date';
+const BUFFER_EXPECTED_TYPE:string = 'Buffer';
+const BUFFER_EXISTS:boolean = typeof Buffer !== 'undefined'; //in node exists, in js not, so only validate in node
 
 function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expectedType:string):void {
 
-    var value:any = pojo[fieldName];
-    var actualType:string = typeof value;
+    const value:any = pojo[fieldName];
+    const actualType:string = typeof value;
 
     if (value === undefined || value === null) {
         return;
@@ -105,7 +105,7 @@ function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expec
                 return;
             }
             if (actualType === STRING_TYPE) {
-                var newValue:number = parseFloat(value);
+                const newValue:number = parseFloat(value);
                 if (isNaN(newValue)) {
                     err();
                 }
@@ -120,9 +120,9 @@ function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expec
             return;
 
         case DATE_EXPECTED_TYPE:
-            var getTime:Function = value.getTime;
+            const getTime:Function = value.getTime;
             if (typeof getTime === FUNCTION_TYPE) {
-                var timeValue:number = value.getTime();
+                const timeValue:number = value.getTime();
                 if (isNaN(timeValue)){
                     err();
                 }
@@ -133,7 +133,7 @@ function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expec
             }
 
             if (actualType === STRING_TYPE) {
-                var newDate:Date = new Date(value);
+                const newDate:Date = new Date(value);
                 if (!isNaN(newDate.getTime())) {
                     pojo[fieldName] = newDate;
                     return;
@@ -155,9 +155,9 @@ function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expec
 
     // one pojo of array of array of pojos?
     if (expectedType.length > 3 && expectedType.substr(expectedType.length - 2, 2) === '[]') {
-        var individualPojoType:string = expectedType.substr(0, expectedType.length - 6);
+        const individualPojoType:string = expectedType.substr(0, expectedType.length - 6);
 
-        var asserter:Function = asserters[individualPojoType];
+        const asserter:Function = asserters[individualPojoType];
         if (typeof asserter !== FUNCTION_TYPE) {
             err();
         }
@@ -165,7 +165,7 @@ function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expec
         if (isNaN(value.length)) {
             err();
         }
-        for(var i:number = 0; i<value.length; i++) {
+        for(let i:number = 0; i<value.length; i++) {
             try {
                 asserter(value[i], true);
             } catch(e) {
@@ -177,7 +177,7 @@ function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expec
         return;
     }
 
-    var asserter:Function = asserters[expectedType.substr(0, expectedType.length - 4)];
+    const asserter:Function = asserters[expectedType.substr(0, expectedType.length - 4)];
     if (typeof asserter !== FUNCTION_TYPE) {
         expectedTypeErr();
     }
@@ -189,7 +189,7 @@ function assertValidFieldType(pojoName:string, fieldName:string, pojo:any, expec
     }
 
     function err(extraMessage?:string):void {
-        var message:string = 'Invalid ' + pojoName + ' provided. Field \'' + fieldName + '\' with value \'' + safeValue(value) + '\' is not a valid \'' + expectedType + '\'.';
+        let message:string = 'Invalid ' + pojoName + ' provided. Field \'' + fieldName + '\' with value \'' + safeValue(value) + '\' is not a valid \'' + expectedType + '\'.';
         if (extraMessage !== undefined) {
             message += ' ' + extraMessage;
         }
@@ -207,7 +207,7 @@ function safeValue(value:any):string {
         return typeof value;
     }
 
-    var s:string = value.toString();
+    const s:string = value.toString();
     return s.substr(0, 100);
 }
 

@@ -149,6 +149,30 @@ export class Schema {
             u.push(r);
         }
     }
+
+    public uniqueRealFields():Field[] {
+        const u:Field[] = [];
+        const foundNames:_.Dictionary<boolean> = {};
+
+        this.tables.forEach(addUniqueFieldNames);
+
+        u.sort((x, y) => x.fieldName < y.fieldName ? -1 : 1); // can't ever be equal
+
+        return u;
+
+        function addUniqueFieldNames(table:Table):void {
+            table.fields.forEach(addFieldIfUnique);
+        }
+
+        function addFieldIfUnique(field:Field):void {
+            if (foundNames[field.fieldName] || field.isReference) {
+                return;
+            }
+
+            foundNames[field.fieldName] = true;
+            u.push(field);
+        }
+    }
 }
 
 export class Table
