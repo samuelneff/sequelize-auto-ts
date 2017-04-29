@@ -10,6 +10,8 @@
 
 import types = require('./sequelize-types');
 
+export const fieldsByTable:{[tableName:string]:{[fieldName:string]:string}} = {};
+
 export interface SequelizeNames {
     TableNames: TableNames;
     calculatedFields:CalculatedFields;
@@ -28,6 +30,9 @@ export class __tableName__Fields {
     /*__each__ fields */ __fieldName__:string = '__fieldName__';
 }
 export const __tableNameSingularCamel__Fields:__tableName__Fields = new __tableName__Fields();
+fieldsByTable['__tableNameSingularCamel__'] = <any>__tableNameSingularCamel__Fields;
+fieldsByTable['__tableNameCamel__'] = <any>__tableNameSingularCamel__Fields;
+fieldsByTable['__tableName__'] = <any>__tableNameSingularCamel__Fields;
 
 /*__endEach__*/
 
@@ -47,3 +52,4 @@ export class FieldTypes {
     /*__each__ uniqueRealFields */ __fieldName__:string = '__translatedFieldType__';
 }
 export const fieldTypes:FieldTypes = new FieldTypes();
+
