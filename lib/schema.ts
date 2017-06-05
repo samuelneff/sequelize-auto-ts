@@ -402,6 +402,7 @@ export function read(database:string, username:string, password:string, options:
     var associationsFound:util.Dictionary<boolean> = {};
     var customReferenceRows:ReferenceDefinitionRow[] = [];
     var idFieldLookup:util.Dictionary<boolean> = {};
+    var customViewNameMappings:util.Dictionary<string> = {};
 
     var sql:string =
         "select table_name, column_name, data_type, ordinal_position " +
@@ -461,10 +462,20 @@ export function read(database:string, username:string, password:string, options:
                 return;
             }
 
-            var customFieldLookup:util.Dictionary<ColumnDefinitionRow> =
-                    util.arrayToDictionary(customFields,'column_name');
+            var trueCustomFields:CustomFieldDefinitionRow[] = [];
 
-            var combined:ColumnDefinitionRow[] = originalRows.concat(customFields);
+            customFields.forEach(cf => {
+                if (cf.data_type === 'IGNORE') {
+                    customViewNameMappings[cf.table_name.toLowerCase()] = cf.table_name;
+                } else {
+                    trueCustomFields.push(cf);
+                }
+            });
+
+            var customFieldLookup:util.Dictionary<ColumnDefinitionRow> =
+                    util.arrayToDictionary(trueCustomFields,'column_name');
+
+            var combined:ColumnDefinitionRow[] = originalRows.concat(trueCustomFields);
             combined.sort(sortByTableNameThenOrdinalPosition);
 
             customReferenceRows = _.where(customFields, cf => cf.referenced_table_name != null && cf.referenced_column_name != null);
@@ -721,6 +732,12 @@ export function read(database:string, username:string, password:string, options:
             }
             table.isView = true;
             schema.views.push(table);
+
+            var customViewName:string = customViewNameMappings[table.tableName];
+            if (customViewName) {
+                table.tableName = customViewName;
+                return;
+            }
 
             _.each(tableNamesManyForms, fixViewNamePart);
 
