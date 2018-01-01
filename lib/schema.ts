@@ -521,16 +521,20 @@ export function read(database:string, username:string, password:string, options:
 
             if (row.table_name != table.tableName)
             {
+                console.log('processTablesAndColumnsWithCustom: Creating row.table_name table ' + row.table_name);
                 table = new Table(schema, row.table_name);
                 tables.push(table);
             }
 
             var isCalculated:boolean = customFieldLookup[row.column_name] !== undefined;
 
+            console.log('processTablesAndColumnsWithCustom: Creating row.column_name field ' + row.column_name)
             var field:Field = new Field(row.column_name, row.data_type, table, false, isCalculated);
             table.fields.push(field);
 
             if (isCalculated && !calculatedFieldsFound[field.fieldName]) {
+
+                console.log('processTablesAndColumnsWithCustom: Appending field.fieldName custom field ' + field.fieldName)
                 schema.calculatedFields.push(field);
                 calculatedFieldsFound[field.fieldName] = true;
             }
@@ -569,6 +573,8 @@ export function read(database:string, username:string, password:string, options:
             return;
         }
 
+        console.log('processReferences, tables: ', schema.tables);
+
         schema.tables.forEach(table => tableLookup[table.tableName] = table);
 
         rows.forEach(processReferenceRow);
@@ -604,6 +610,8 @@ export function read(database:string, username:string, password:string, options:
 
             var associationName:string;
 
+            console.log('processReferenceRow: row ', row);
+
             if (row.column_name !== row.referenced_column_name) {
 
                 // example, row.column_name is ownerUserID
@@ -616,6 +624,9 @@ export function read(database:string, username:string, password:string, options:
                     row.referenced_table_name;
 
                 if (!associationsFound[associationName]) {
+
+                    console.log('processReferenceRow: creating association ' + associationName);
+
                     schema.associations.push(new Association(associationName));
                     associationsFound[associationName] = true;
                 }
@@ -630,9 +641,12 @@ export function read(database:string, username:string, password:string, options:
                 // to make sure we only create one field in the parent table
 
                 var fieldName = util.camelCase(row.table_name);
-                if (!parentTable.fields.some(f => f.fieldName === fieldName)) {
+                if (parentTable.fields.every(f => f.fieldName !== fieldName)) {
+
+                    console.log('processReferenceRow: creating parent table field ' + parentTable.tableName + '.' + fieldName);
+
                     parentTable.fields.push(new Field(
-                        util.camelCase(row.table_name),                                     // Leads -> leads
+                        fieldName,                                     // Leads -> leads
                         Sequelize.Utils.singularize(row.table_name) + 'Pojo[]',             // Leads -> LeadPojo[]
                         parentTable,                                                        // Accounts table reference
                         true));
@@ -647,6 +661,9 @@ export function read(database:string, username:string, password:string, options:
 
             // renamed fields in views can cause extra parent table references that don't get properly prefixed
             if (childTable.fields.every(f => f.fieldName !== childTableFieldName)) {
+
+                console.log('processReferenceRow: creating child table field ' + childTable.tableName + '.' + childTableFieldName);
+
                 childTable.fields.push(
                     new Field(
                         childTableFieldName,
@@ -656,14 +673,28 @@ export function read(database:string, username:string, password:string, options:
             }
 
             // tell Sequelize about the reference
-            schema.references.push(new Reference(
-                                            row.referenced_table_name,
-                                            row.table_name,
-                                            associationName,
-                                            util.camelCase(Sequelize.Utils.singularize(row.referenced_table_name)) + toTitleCase(Schema.idSuffix),
-                                            row.column_name,
-                                            false,
-                                            schema));
+            const primaryKey:string = util.camelCase(Sequelize.Utils.singularize(row.referenced_table_name)) + toTitleCase(Schema.idSuffix);
+
+            if (!schema.references.some(
+                r =>
+                    r.primaryTableName === row.referenced_table_name &&
+                    r.foreignTableName === row.table_name &&
+                    r.associationName === associationName &&
+                    r.primaryKey === primaryKey &&
+                    r.foreignKey === row.column_name
+                )) {
+
+                console.log('processReferenceRow: creating reference ');
+
+                schema.references.push(new Reference(
+                    row.referenced_table_name,
+                    row.table_name,
+                    associationName,
+                    primaryKey,
+                    row.column_name,
+                    false,
+                    schema));
+            }
         }
 
         function processReferenceXrefRow(row:ReferenceDefinitionRow):void {
@@ -696,11 +727,15 @@ export function read(database:string, username:string, password:string, options:
                 var firstTable:Table = tableLookup[xref.firstTableName];
                 var secondTable:Table = tableLookup[xref.secondTableName];
 
+                console.log('processReferenceXrefs: creating first table field ' + firstTable.tableName + '.' + util.camelCase(xref.secondTableName));
+
                 firstTable.fields.push(new Field(
                     util.camelCase(xref.secondTableName),
                     Sequelize.Utils.singularize(xref.secondTableName) + 'Pojo[]',
                     firstTable,
                     true));
+
+                console.log('processReferenceXrefs: creating second table field ' + secondTable.tableName + '.' + util.camelCase(xref.firstTableName));
 
                 secondTable.fields.push(new Field(
                     util.camelCase(xref.firstTableName),
@@ -742,6 +777,9 @@ export function read(database:string, username:string, password:string, options:
                 return;
             }
             table.isView = true;
+
+            console.log('fixViewName: creating view ' + table.tableName);
+
             schema.views.push(table);
 
             var customViewName:string = customViewNameMappings[table.tableName];
@@ -788,7 +826,6 @@ export function read(database:string, username:string, password:string, options:
                 return;
             }
 
-
             var targetFieldName:string = toTitleCase(field.targetIdFieldType) || field.fieldNameProperCase();
             var otherTableName:string = Sequelize.Utils.pluralize(targetFieldName.substr(0, targetFieldName.length - Schema.idSuffix.length), "en");
 
@@ -798,26 +835,53 @@ export function read(database:string, username:string, password:string, options:
                 return;
             }
 
+            var primaryKey:string = otherTable.fields[0].fieldName;
+
+            if (schema.references.some(r =>
+                r.primaryTableName === otherTableName &&
+                r.foreignTableName === view.tableName &&
+                r.primaryKey === primaryKey &&
+                r.foreignKey === field.fieldName)) {
+
+                return;
+            }
+
             var reference:Reference = new Reference(otherTableName,
                                                     view.tableName,
                                                     undefined,
-                                                    field.fieldName,
+                                                    primaryKey,
                                                     field.fieldName,
                                                     true,
                                                     schema);
 
+            console.log('addViewFieldReference: creating reference ' + reference.primaryTableName + '.' + reference.primaryKey + ' -> ' + reference.foreignTableName + '.' + reference.foreignKey);
             schema.references.push(reference);
 
+            var prefix:string = primaryKey.length < field.fieldName.length
+                                    ? field.fieldName.substring(0, field.fieldName.length - primaryKey.length)
+                                    : '';
+
             var otherTableSingular:string = Sequelize.Utils.singularize(otherTableName, 'en');
+            var viewFieldName:string = prefix
+                    ? prefix + toTitleCase(otherTableSingular)
+                    : toCamelCase(otherTableSingular);
+
+            console.log('addViewFieldReference: view field ' + view.tableName + '.' + viewFieldName);
 
             view.fields.push(new Field(
-                otherTableSingular,
+                viewFieldName,
                 otherTableSingular + 'Pojo',
                 view,
                 true));
 
+            var otherFieldName:string = prefix
+                ? prefix + toTitleCase(view.tableName)
+                : toCamelCase(view.tableName);
+
+            console.log('addViewFieldReference: other table field ' + otherTable.tableName + '.' + otherFieldName);
+
             otherTable.fields.push(new Field(
-                util.camelCase(view.tableName),
+                otherFieldName,
                 Sequelize.Utils.singularize(view.tableName, 'en') + 'Pojo[]',
                 otherTable,
                 true));
