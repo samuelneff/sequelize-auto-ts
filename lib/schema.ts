@@ -640,14 +640,20 @@ export function read(database:string, username:string, password:string, options:
             }
 
             // create singular parent reference from child
-            childTable.fields.push(new Field(
-                util.camelCase(Sequelize.Utils.singularize(
-                        associationName === undefined
-                            ? row.referenced_table_name                             // Accounts -> account
-                            : associationName)),                                    // ownerUserId -> OwnerUsers -> ownerUser
-                Sequelize.Utils.singularize(row.referenced_table_name) + 'Pojo',    // Accounts -> AccountPojo
-                childTable,
-                true));
+            var childTableFieldName:string = util.camelCase(Sequelize.Utils.singularize(
+                associationName === undefined
+                    ? row.referenced_table_name                             // Accounts -> account
+                    : associationName));                                    // ownerUserId -> OwnerUsers -> ownerUser
+
+            // renamed fields in views can cause extra parent table references that don't get properly prefixed
+            if (childTable.fields.every(f => f.fieldName !== childTableFieldName)) {
+                childTable.fields.push(
+                    new Field(
+                        childTableFieldName,
+                        Sequelize.Utils.singularize(row.referenced_table_name) + 'Pojo',    // Accounts -> AccountPojo
+                        childTable,
+                        true));
+            }
 
             // tell Sequelize about the reference
             schema.references.push(new Reference(
