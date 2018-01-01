@@ -3,7 +3,11 @@
  * Loads and exposes schema from database
  */
 
+/// <reference path="../typings/bluebird/bluebird.d.ts" />
+/// <reference path="../typings/lodash/lodash.d.ts" />
 /// <reference path="../typings/node/node.d.ts" />
+/// <reference path="../typings/underscore.string/underscore.string.d.ts" />
+
 /// <reference path="./sequelize.d.ts" />
 
 import util = require('./util');
@@ -33,8 +37,9 @@ export class Schema {
 
     public static fieldTypeTranslations:util.Dictionary<string> = {
 
-        tinyint: "boolean",
+        any: "any",
 
+        tinyint: "boolean",
         smallint: "number",
         int: "number",
         integer: "number",
@@ -777,7 +782,9 @@ export function read(database:string, username:string, password:string, options:
                 return;
             }
 
-            var otherTableName:string = Sequelize.Utils.pluralize(field.fieldNameProperCase().substr(0, field.fieldName.length - Schema.idSuffix.length), "en");
+
+            var targetFieldName:string = toTitleCase(field.targetIdFieldType) || field.fieldNameProperCase();
+            var otherTableName:string = Sequelize.Utils.pluralize(targetFieldName.substr(0, targetFieldName.length - Schema.idSuffix.length), "en");
 
             var otherTable:Table = tableLookup[otherTableName];
             if (otherTable === undefined) {
@@ -896,7 +903,7 @@ export function read(database:string, username:string, password:string, options:
 }
 
 function toTitleCase(text:string):string {
-    return text.charAt(0).toUpperCase() + text.substr(1, text.length - 1);
+    return text == undefined ? undefined : text.charAt(0).toUpperCase() + text.substr(1, text.length - 1);
 }
 
 function toCamelCase(text:string):string {

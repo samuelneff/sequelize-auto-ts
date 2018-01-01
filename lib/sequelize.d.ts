@@ -1,6 +1,3 @@
-/// <reference path="../typings/node/node.d.ts" />
-/// <reference path="../typings/lodash/lodash.d.ts" />
-/// <reference path="../typings/underscore.string/underscore.string.d.ts" />
 
 declare module sequelize
 {
