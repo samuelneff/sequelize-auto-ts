@@ -161,3 +161,8 @@ http://dev.mysql.com/doc/refman/5.0/en/identifier-case-sensitivity.html
 
 lower_case_table_names=2
 
+# License
+
+The MIT License (MIT). Copyright (c) 2014 Samuel Neff. See [MIT LICENSE](https://github.com/samuelneff/sequelize-auto-ts/blob/master/LICENSE).
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fsamuelneff%2Fsequelize-auto-ts.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fsamuelneff%2Fsequelize-auto-ts?ref=badge_large)
