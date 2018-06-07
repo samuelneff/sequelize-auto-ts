@@ -4,6 +4,8 @@ sequelize-auto-ts
 Generate Sequelize definition statements and compatible TypeScript definitions from a MySQL database schema.
 
 # Running sequelize-auto-ts
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fsamuelneff%2Fsequelize-auto-ts.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fsamuelneff%2Fsequelize-auto-ts?ref=badge_shield)
+
 
 Use node to execute `lib\cli.ts` and pass in four required parameters: database, username, password, and target directory.
 
@@ -161,3 +163,7 @@ http://dev.mysql.com/doc/refman/5.0/en/identifier-case-sensitivity.html
 
 lower_case_table_names=2
 
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fsamuelneff%2Fsequelize-auto-ts.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fsamuelneff%2Fsequelize-auto-ts?ref=badge_large)
