@@ -3,6 +3,10 @@ sequelize-auto-ts
 
 Generate Sequelize definition statements and compatible TypeScript definitions from a MySQL database schema.
 
+# Versions Note, April 2019
+
+This is an old project that was written for Node 0.10 and Sequelize 1.7. It is not maintained. If anyone creates a fork that is compatible to the most recent version, I'll be happy to link to that fork. Sam
+
 # Running sequelize-auto-ts
 
 Use node to execute `lib\cli.js` and pass in four required parameters: database, username, password, and target directory.
