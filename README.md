@@ -5,10 +5,10 @@ Generate Sequelize definition statements and compatible TypeScript definitions f
 
 # Running sequelize-auto-ts
 
-Use node to execute `lib\cli.ts` and pass in four required parameters: database, username, password, and target directory.
+Use node to execute `lib\cli.js` and pass in four required parameters: database, username, password, and target directory.
 
 ```
-c:\sequelize-auto-ts>node lib\cli.ts world root rootPassword c:\my-project\src\models
+c:\sequelize-auto-ts>node lib\cli.js world root rootPassword c:\my-project\src\models
 ```
 
 # Version 1.0.3 documentation
